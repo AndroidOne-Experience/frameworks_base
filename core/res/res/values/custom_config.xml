@@ -11,4 +11,7 @@
   <string-array name="device_configs_override" translatable="false">
   </string-array>
 
+  <!-- Whether to force enable multi resolution configuration for camera -->
+    <bool name="config_forceMultiResolution">false</bool>
+
 </resources>
