@@ -82,4 +82,7 @@
     <!-- Ringer QS tile -->
     <string name="qs_tile_ringer_mode_label">Ringer mode</string>
 
+    <!-- Name of the roaming status bar icon. -->
+    <string name="status_bar_roaming">Roaming indicator</string>
+
 </resources>

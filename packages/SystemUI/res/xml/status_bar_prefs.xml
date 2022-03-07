@@ -35,6 +35,11 @@
         android:title="@string/data_disabled_icon_title" />
 
     <com.android.systemui.tuner.StatusBarSwitch
+        android:icon="@drawable/ic_statusbar_roaming"
+        android:key="roaming"
+        android:title="@string/status_bar_roaming" />
+
+    <com.android.systemui.tuner.StatusBarSwitch
         android:key="volte"
         android:title="@string/status_bar_volte_icon_title"
         android:icon="@drawable/ic_statusbar_volte_tuner" />
