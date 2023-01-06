@@ -329,5 +329,6 @@ public class SecureSettings {
         Settings.Secure.NOTIFICATION_BUNDLES_ALWAYS_EXPAND,
         Settings.Secure.DOZE_PICK_UP_GESTURE_AMBIENT,
         Settings.Secure.DOZE_TAP_GESTURE_AMBIENT,
+        Settings.Secure.DOZE_FOR_NOTIFICATIONS,
     };
 }
