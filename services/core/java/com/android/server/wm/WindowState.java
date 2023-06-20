@@ -1467,7 +1467,7 @@ class WindowState extends WindowContainer<WindowState> implements WindowManagerP
             // can wait until it has finished drawing to start.
             if ((configChanged || dragResizingChanged) && isVisibleRequested()) {
                 winAnimator.mDrawState = DRAW_PENDING;
-                if (mActivityRecord != null) {
+                if (mActivityRecord != null && !mIsChildWindow) {
                     mActivityRecord.clearAllDrawn();
                     if (mAttrs.type == TYPE_APPLICATION_STARTING
                             && mActivityRecord.mStartingData != null) {
