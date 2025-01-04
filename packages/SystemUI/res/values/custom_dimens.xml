@@ -5,4 +5,7 @@
 -->
 <resources>
 
+    <!-- Face unlock icon -->
+    <dimen name="face_unlock_icon_margin_top">6dp</dimen>
+
 </resources>
