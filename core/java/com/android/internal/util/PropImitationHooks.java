@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Binder;
+import android.os.Environment;
 import android.os.Process;
 import android.os.SystemProperties;
 import android.text.TextUtils;
@@ -33,8 +34,18 @@ import android.util.Log;
 
 import com.android.internal.R;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,6 +62,7 @@ public class PropImitationHooks {
 
     private static final Boolean sDisableKeyAttestationBlock = SystemProperties.getBoolean(
             "persist.sys.pihooks.disable.gms_key_attestation_block", false);
+    private static final String DATA_FILE = "gms_certified_props.json";
 
     private static final String PACKAGE_ARCORE = "com.google.ar.core";
     private static final String PACKAGE_FINSKY = "com.android.vending";
@@ -72,7 +84,7 @@ public class PropImitationHooks {
         "FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"
     );
 
-    private static volatile String[] sCertifiedProps;
+    private static volatile List<String> sCertifiedProps = new ArrayList<>();
     private static volatile String sStockFp, sNetflixModel;
 
     private static volatile String sProcessName;
@@ -93,7 +105,6 @@ public class PropImitationHooks {
             return;
         }
 
-        sCertifiedProps = res.getStringArray(R.array.config_certifiedBuildProperties);
         sStockFp = res.getString(R.string.config_stockFingerprint);
         sNetflixModel = res.getString(R.string.config_netflixSpoofModel);
 
@@ -108,7 +119,7 @@ public class PropImitationHooks {
          * Set custom model for Netflix
          */
         if (sIsGms) {
-            setCertifiedPropsForGms();
+            setCertifiedPropsForGms(context);
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
@@ -139,7 +150,7 @@ public class PropImitationHooks {
         }
     }
 
-    private static void setCertifiedPropsForGms() {
+    private static void setCertifiedPropsForGms(Context context) {
         if (sDisableGmsProps) {
             dlog("GMS prop imitation is disabled by user");
             return;
@@ -148,6 +159,30 @@ public class PropImitationHooks {
         if (sCertifiedProps.length == 0) {
             dlog("Certified props are not set");
             return;
+        }
+
+        File dataFile = new File(Environment.getDataSystemDirectory(), DATA_FILE);
+        String savedProps = readFromFile(dataFile);
+
+        if (TextUtils.isEmpty(savedProps)) {
+            Log.d(TAG, "Parsing props locally - data file unavailable");
+            sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_certifiedBuildProperties));
+        } else {
+            Log.d(TAG, "Parsing props fetched by attestation service");
+            try {
+                JSONObject parsedProps = new JSONObject(savedProps);
+                Iterator<String> keys = parsedProps.keys();
+
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    String value = parsedProps.getString(key);
+                    sCertifiedProps.add(key + ":" + value);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "Error parsing JSON data", e);
+                Log.d(TAG, "Parsing props locally as fallback");
+                sCertifiedProps = Arrays.asList(context.getResources().getStringArray(R.array.config_certifiedBuildProperties));
+            }
         }
 
         final boolean was = isGmsAddAccountActivityOnTop();
@@ -185,6 +220,23 @@ public class PropImitationHooks {
             }
             setPropValue(fieldAndProp[0], fieldAndProp[1]);
         }
+    }
+
+    private static String readFromFile(File file) {
+        StringBuilder content = new StringBuilder();
+
+        if (file.exists()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    content.append(line);
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "Error reading from file", e);
+            }
+        }
+        return content.toString();
     }
 
     private static boolean isGmsAddAccountActivityOnTop() {
