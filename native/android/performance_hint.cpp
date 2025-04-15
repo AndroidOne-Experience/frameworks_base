@@ -796,6 +796,12 @@ int APerformanceHintSession::reportActualWorkDurationInternal(AWorkDuration* wor
         }
     }
 
+    const int overflow = mActualWorkDurations.size() - 50;
+    if (overflow > 0) {
+        mActualWorkDurations.erase(mActualWorkDurations.begin(),
+                                    mActualWorkDurations.begin() + overflow);
+    }
+
     if (actualTotalDurationNanos >= mTargetDurationNanos) {
         // Reset timestamps if we are equal or over the target.
         mFirstTargetMetTimestamp = 0;
