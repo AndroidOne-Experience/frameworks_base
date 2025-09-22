@@ -483,7 +483,7 @@ public final class WindowManagerGlobal {
 
             boolean ignoreSecure = Settings.Global.getInt(
                     view.getContext().getContentResolver(),
-                    Settings.Global.WINDOW_IGNORE_SECURE, 0) == 1;
+                    Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1;
 
             if (ignoreSecure) {
                 wparams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
@@ -521,7 +521,7 @@ public final class WindowManagerGlobal {
 
         boolean ignoreSecure = Settings.Global.getInt(
                 view.getContext().getContentResolver(),
-                Settings.Global.WINDOW_IGNORE_SECURE, 0) == 1;
+                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1;
 
         if (ignoreSecure) {
             wparams.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
