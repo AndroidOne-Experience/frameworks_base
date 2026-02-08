@@ -62,40 +62,14 @@ public class PropImitationHooks {
     private static final ComponentName GMS_ADD_ACCOUNT_ACTIVITY = ComponentName.unflattenFromString(
             "com.google.android.gms/.auth.uiflows.minutemaid.MinuteMaidActivity");
 
-    private static final String FEATURE_NEXUS_PRELOAD =
-            "com.google.android.apps.photos.NEXUS_PRELOAD";
-
-    private static final Map<String, String> sPixelOneProps = Map.of(
-        "PRODUCT", "sailfish",
-        "DEVICE", "sailfish",
+    private static final Map<String, String> sPixelXLProps = Map.of(
+        "PRODUCT", "marlin",
+        "DEVICE", "marlin",
         "MANUFACTURER", "Google",
         "BRAND", "google",
-        "MODEL", "Pixel",
-        "FINGERPRINT", "google/sailfish/sailfish:10/QP1A.191005.007.A3/5972272:user/release-keys"
-    );
-
-    private static final Set<String> sPixelFeatures = Set.of(
-        "PIXEL_2017_EXPERIENCE",
-        "PIXEL_2017_PRELOAD",
-        "PIXEL_2018_EXPERIENCE",
-        "PIXEL_2018_PRELOAD",
-        "PIXEL_2019_EXPERIENCE",
-        "PIXEL_2019_MIDYEAR_EXPERIENCE",
-        "PIXEL_2019_MIDYEAR_PRELOAD",
-        "PIXEL_2019_PRELOAD",
-        "PIXEL_2020_EXPERIENCE",
-        "PIXEL_2020_MIDYEAR_EXPERIENCE",
-        "PIXEL_2021_MIDYEAR_EXPERIENCE"
-    );
-
-    private static final Set<String> sTensorFeatures = Set.of(
-        "PIXEL_2021_EXPERIENCE",
-        "PIXEL_2022_EXPERIENCE",
-        "PIXEL_2022_MIDYEAR_EXPERIENCE",
-        "PIXEL_2023_EXPERIENCE",
-        "PIXEL_2023_MIDYEAR_EXPERIENCE",
-        "PIXEL_2024_EXPERIENCE",
-        "PIXEL_2024_MIDYEAR_EXPERIENCE"
+        "MODEL", "Pixel XL",
+        "ID", "QP1A.191005.007.A3",
+        "FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"
     );
 
     private static volatile String[] sCertifiedProps;
@@ -130,8 +104,8 @@ public class PropImitationHooks {
 
         /* Set Certified Properties for GMSCore
          * Set Stock Fingerprint for ARCore
-         * Set custom model for Netflix
          * Set Pixel XL for Google Photos
+         * Set custom model for Netflix
          */
         if (sIsGms) {
             setCertifiedPropsForGms();
@@ -139,8 +113,8 @@ public class PropImitationHooks {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
         } else if (sIsPhotos) {
-            dlog("Spoofing Pixel 1 for Google Photos");
-            sPixelOneProps.forEach((PropImitationHooks::setPropValue));
+            dlog("Spoofing Pixel XL for Google Photos");
+            sPixelXLProps.forEach((PropImitationHooks::setPropValue));
         } else if (!sNetflixModel.isEmpty() && packageName.equals(PACKAGE_NETFLIX)) {
             dlog("Setting model to " + sNetflixModel + " for Netflix");
             setPropValue("MODEL", sNetflixModel);
@@ -259,20 +233,6 @@ public class PropImitationHooks {
             dlog("Blocked key attestation sIsGms=" + sIsGms + " sIsFinsky=" + sIsFinsky);
             throw new UnsupportedOperationException();
         }
-    }
-
-    public static boolean hasSystemFeature(String name, boolean has) {
-        if (sIsPhotos) {
-            if (has && (sPixelFeatures.stream().anyMatch(name::contains)
-                    || sTensorFeatures.stream().anyMatch(name::contains))) {
-                dlog("Blocked system feature " + name + " for Google Photos");
-                has = false;
-            } else if (!has && name.equalsIgnoreCase(FEATURE_NEXUS_PRELOAD)) {
-                dlog("Enabled system feature " + name + " for Google Photos");
-                has = true;
-            }
-        }
-        return has;
     }
 
     public static void dlog(String msg) {
