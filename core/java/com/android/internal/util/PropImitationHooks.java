@@ -84,8 +84,18 @@ public class PropImitationHooks {
         "FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys"
     );
 
+    private static final Map<String, String> sPixel3Props = Map.of(
+        "PRODUCT", "blueline",
+        "DEVICE", "blueline",
+        "MANUFACTURER", "Google",
+        "BRAND", "google",
+        "MODEL", "Pixel 3",
+        "ID", "RQ2A.210305.006",
+        "FINGERPRINT", "google/blueline/blueline:11/RQ2A.210305.006/7119741:user/release-keys"
+    );
+
     private static volatile List<String> sCertifiedProps = new ArrayList<>();
-    private static volatile String sStockFp, sNetflixModel;
+    private static volatile String sStockFp;
 
     private static volatile String sProcessName;
     private static volatile boolean sIsGms, sIsFinsky, sIsPhotos;
@@ -106,7 +116,6 @@ public class PropImitationHooks {
         }
 
         sStockFp = res.getString(R.string.config_stockFingerprint);
-        sNetflixModel = res.getString(R.string.config_netflixSpoofModel);
 
         sProcessName = processName;
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
@@ -116,7 +125,7 @@ public class PropImitationHooks {
         /* Set Certified Properties for GMSCore
          * Set Stock Fingerprint for ARCore
          * Set Pixel XL for Google Photos
-         * Set custom model for Netflix
+         * Set Pixel 3 for Netflix
          */
         if (sIsGms) {
             setCertifiedPropsForGms(context);
@@ -126,9 +135,9 @@ public class PropImitationHooks {
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
             sPixelXLProps.forEach((PropImitationHooks::setPropValue));
-        } else if (!sNetflixModel.isEmpty() && packageName.equals(PACKAGE_NETFLIX)) {
-            dlog("Setting model to " + sNetflixModel + " for Netflix");
-            setPropValue("MODEL", sNetflixModel);
+        } else if (packageName.equals(PACKAGE_NETFLIX)) {
+            dlog("Setting model to Pixel 3 for Netflix");
+            sPixel3Props.forEach((PropImitationHooks::setPropValue));
         }
     }
 
