@@ -73,6 +73,13 @@ public class PropImitationHooks {
     private static final String PROCESS_GMS_UNSTABLE = PACKAGE_GMS + ".unstable";
     private static final String PACKAGE_NETFLIX = "com.netflix.mediaclient";
     private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
+    private static final Set<String> PIXEL_WALLPAPER_PACKAGES = Set.of(
+            "com.breel.wallpapers20",
+            "com.google.android.apps.wallpaper",
+            "com.google.android.apps.wallpaper.pixel",
+            "com.google.pixel.dynamicwallpapers",
+            "com.google.pixel.livewallpaper"
+    );
 
     private static final ComponentName GMS_ADD_ACCOUNT_ACTIVITY = ComponentName.unflattenFromString(
             "com.google.android.gms/.auth.uiflows.minutemaid.MinuteMaidActivity");
@@ -142,9 +149,10 @@ public class PropImitationHooks {
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
             sPixelXLProps.forEach((PropImitationHooks::setPropValue));
-        } else if (packageName.equals(PACKAGE_NETFLIX)) {
-            dlog("Setting model to Pixel 3 for Netflix");
-            sPixel3Props.forEach((PropImitationHooks::setPropValue));
+        } else if (packageName.equals(PACKAGE_NETFLIX)
+                || PIXEL_WALLPAPER_PACKAGES.contains(packageName)) {
+            dlog("Setting model to Pixel 3 for: " + packageName);
+            sPixel3Props.forEach(PropImitationHooks::setPropValue);
         }
     }
 
