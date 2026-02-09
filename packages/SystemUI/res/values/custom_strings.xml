@@ -56,8 +56,8 @@
     <!-- Name of the roaming status bar icon. -->
     <string name="status_bar_roaming">Roaming indicator</string>
 
-    <!-- Data disabled icon -->
-    <string name="data_disabled_icon_title">Data disabled icon</string>
+    <!-- Data off indicator -->
+    <string name="data_disabled_icon_title">Data off indicator</string>
 
     <!-- 4G icon -->
     <string name="fourg_icon_title">4G network indicator</string>
