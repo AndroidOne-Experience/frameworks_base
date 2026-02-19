@@ -491,7 +491,7 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         });
 
         mSecureSettings.registerContentObserverForUserSync(
-                Settings.Secure.getUriFor(Settings.Secure.UI_NIGHT_MODE),
+                Settings.Secure.getUriFor(Settings.Secure.BERRY_BLACK_THEME),
                 false,
                 new ContentObserver(mBgHandler) {
                     @Override
@@ -793,8 +793,9 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
             }
         }
 
-        // Always apply pure black theme when night mode is enabled
-        boolean isBlackMode = isNightMode();
+        boolean isBlackMode = (Settings.Secure.getIntForUser(
+                mContext.getContentResolver(), Settings.Secure.BERRY_BLACK_THEME,
+                0, currentUser) == 1) && isNightMode();
 
         // Compatibility with legacy themes, where full packages were defined, instead of just
         // colors.
