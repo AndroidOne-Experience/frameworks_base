@@ -38,8 +38,6 @@ import com.android.systemui.log.table.logDiffsForTable
 import com.android.systemui.statusbar.connectivity.WifiPickerTrackerFactory
 import com.android.systemui.statusbar.pipeline.dagger.WifiInputLog
 import com.android.systemui.statusbar.pipeline.dagger.WifiTableLog
-import com.android.systemui.statusbar.pipeline.ims.data.model.ImsStateModel
-import com.android.systemui.statusbar.pipeline.ims.data.repository.CommonImsRepository
 import com.android.systemui.statusbar.pipeline.shared.data.model.DataActivityModel
 import com.android.systemui.statusbar.pipeline.shared.data.model.toWifiDataActivityModel
 import com.android.systemui.statusbar.pipeline.wifi.data.repository.RealWifiRepository
@@ -85,7 +83,6 @@ constructor(
     private val wifiManager: WifiManager,
     @WifiInputLog private val inputLogger: LogBuffer,
     @WifiTableLog private val tableLogger: TableLogBuffer,
-    private val commonImsRepo: CommonImsRepository,
 ) : RealWifiRepository, LifecycleOwner {
 
     override val lifecycle =
@@ -516,7 +513,6 @@ constructor(
         private val wifiPickerTrackerFactory: WifiPickerTrackerFactory,
         @WifiInputLog private val inputLogger: LogBuffer,
         @WifiTableLog private val tableLogger: TableLogBuffer,
-        private val commonImsRepository: CommonImsRepository
     ) {
         fun create(wifiManager: WifiManager): WifiRepositoryImpl {
             return WifiRepositoryImpl(
@@ -529,12 +525,9 @@ constructor(
                 wifiManager,
                 inputLogger,
                 tableLogger,
-                commonImsRepository,
             )
         }
     }
-
-    override val imsStates: StateFlow<List<ImsStateModel>> = commonImsRepo.imsStates
 
     companion object {
         // Start out with no known wifi network.

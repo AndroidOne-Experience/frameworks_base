@@ -68,8 +68,6 @@ public class SignalDrawable extends DrawableWrapper {
     private static final int STATE_MASK = 0xff << STATE_SHIFT;
     private static final int STATE_CUT = 2;
     private static final int STATE_CARRIER_CHANGE = 3;
-    private static final int STATE_R = 4;
-    private static final int STATE_CUT_AND_R = 5;
 
     private static final long DOT_DELAY = 1000;
 
@@ -85,13 +83,9 @@ public class SignalDrawable extends DrawableWrapper {
     private final Path mXPath = new Path();
     private final Matrix mXScaleMatrix = new Matrix();
     private final Path mScaledXPath = new Path();
-    private final Path mRoamingPath = new Path();
-    private final Path mScaledRoamingPath = new Path();
     private final Handler mHandler;
     private final float mCutoutWidthFraction;
     private final float mCutoutHeightFraction;
-    private final float mRCutoutWidthFraction;
-    private final float mRCutoutHeightFraction;
     private float mDarkIntensity = -1;
     private final int mIntrinsicSize;
     private boolean mAnimating;
@@ -105,19 +99,12 @@ public class SignalDrawable extends DrawableWrapper {
         super(context.getDrawable(ICON_RES));
         final String xPathString = context.getString(
                 com.android.internal.R.string.config_signalXPath);
-        final String roamingPathString = context.getString(
-                R.string.config_signalRoamingPath);
         mXPath.set(PathParser.createPathFromPathData(xPathString));
-        mRoamingPath.set(PathParser.createPathFromPathData(roamingPathString));
         updateScaledXPath();
         mCutoutWidthFraction = context.getResources().getFloat(
                 com.android.internal.R.dimen.config_signalCutoutWidthFraction);
         mCutoutHeightFraction = context.getResources().getFloat(
                 com.android.internal.R.dimen.config_signalCutoutHeightFraction);
-        mRCutoutWidthFraction = context.getResources().getFloat(
-                R.dimen.config_roamingCutoutWidthFraction);
-        mRCutoutHeightFraction = context.getResources().getFloat(
-                R.dimen.config_roamingCutoutHeightFraction);
         mDarkModeFillColor = Utils.getColorStateListDefaultColor(context,
                 R.color.dark_mode_icon_color_single_tone);
         mLightModeFillColor = Utils.getColorStateListDefaultColor(context,
@@ -136,7 +123,6 @@ public class SignalDrawable extends DrawableWrapper {
             mXScaleMatrix.setScale(getBounds().width() / VIEWPORT, getBounds().height() / VIEWPORT);
         }
         mXPath.transform(mXScaleMatrix, mScaledXPath);
-        mRoamingPath.transform(mXScaleMatrix, mScaledRoamingPath);
     }
 
     @Override
@@ -246,32 +232,9 @@ public class SignalDrawable extends DrawableWrapper {
             drawDotAndPadding(x - dotSpacing * 2, y, dotPadding, dotSize, 0);
             canvas.drawPath(mCutoutPath, mTransparentPaint);
             canvas.drawPath(mForegroundPath, mForegroundPaint);
-        } else if (!newStatusBarIcons() && isInState(STATE_CUT_AND_R)) {
-            // Roaming
-            float cutWidth = mRCutoutWidthFraction;
-            float cutHeight = mRCutoutHeightFraction;
-            float cutX = (cutWidth * width / VIEWPORT);
-            float cutY = (cutHeight * height / VIEWPORT);
-            float rIconOffset = -0.8f * (mCutoutWidthFraction * width / VIEWPORT);
-            mCutoutPath.moveTo(width + rIconOffset, height);
-            mCutoutPath.rLineTo(-cutX, 0);
-            mCutoutPath.rLineTo(0, -cutY);
-            mCutoutPath.rLineTo(cutX, 0);
-            mCutoutPath.rLineTo(0, cutY);
-            canvas.drawPath(mCutoutPath, mTransparentPaint);
-            // Adjust mScaledRoamingPath
-            Path adjustedRoamingPath = new Path(mScaledRoamingPath);
-            Matrix matrix = new Matrix();
-            matrix.postTranslate(rIconOffset, 0);
-            adjustedRoamingPath.transform(matrix);
-            canvas.drawPath(adjustedRoamingPath, mForegroundPaint);
-            // Attribution
-            mCutoutPath.reset();
-            mCutoutPath.setFillType(FillType.WINDING);
-            cutWidth = mCutoutWidthFraction;
-            cutHeight = mCutoutHeightFraction;
-            cutX = (cutWidth * width / VIEWPORT);
-            cutY = (cutHeight * height / VIEWPORT);
+        } else if (!newStatusBarIcons() && isInState(STATE_CUT)) {
+            float cutX = (mCutoutWidthFraction * width / VIEWPORT);
+            float cutY = (mCutoutHeightFraction * height / VIEWPORT);
             mCutoutPath.moveTo(width, height);
             mCutoutPath.rLineTo(-cutX, 0);
             mCutoutPath.rLineTo(0, -cutY);
@@ -279,20 +242,6 @@ public class SignalDrawable extends DrawableWrapper {
             mCutoutPath.rLineTo(0, cutY);
             canvas.drawPath(mCutoutPath, mTransparentPaint);
             canvas.drawPath(mScaledXPath, mForegroundPaint);
-        } else if (!newStatusBarIcons() && (isInState(STATE_CUT) || isInState(STATE_R))) {
-            boolean isRoaming = isInState(STATE_R);
-            float cutWidth = isRoaming ? mRCutoutWidthFraction : mCutoutWidthFraction;
-            float cutHeight = isRoaming ? mRCutoutHeightFraction : mCutoutHeightFraction;
-            float cutX = (cutWidth * width / VIEWPORT);
-            float cutY = (cutHeight * height / VIEWPORT);
-            mCutoutPath.moveTo(width, height);
-            mCutoutPath.rLineTo(-cutX, 0);
-            mCutoutPath.rLineTo(0, -cutY);
-            mCutoutPath.rLineTo(cutX, 0);
-            mCutoutPath.rLineTo(0, cutY);
-            canvas.drawPath(mCutoutPath, mTransparentPaint);
-            canvas.drawPath(isRoaming ? mScaledRoamingPath : mScaledXPath,
-                    mForegroundPaint);
         }
         if (isRtl) {
             canvas.restore();
@@ -354,13 +303,10 @@ public class SignalDrawable extends DrawableWrapper {
         return (fullState & STATE_MASK) >> STATE_SHIFT;
     }
 
-    public static int getState(int level, int numLevels, boolean cutOut, boolean roaming) {
-        int state = cutOut ? (roaming ? STATE_CUT_AND_R : STATE_CUT) : (roaming ? STATE_R : 0);
-        return (state << STATE_SHIFT) | (numLevels << NUM_LEVEL_SHIFT) | level;
-    }
-
     public static int getState(int level, int numLevels, boolean cutOut) {
-        return getState(level, numLevels, cutOut, false);
+        return ((cutOut ? STATE_CUT : 0) << STATE_SHIFT)
+                | (numLevels << NUM_LEVEL_SHIFT)
+                | level;
     }
 
     @Override
