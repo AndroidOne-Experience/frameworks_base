@@ -19,6 +19,7 @@ package com.android.systemui.statusbar.pipeline.icons.shared
 import com.android.systemui.dagger.SysUISingleton
 import com.android.systemui.statusbar.pipeline.icons.shared.model.BindableIcon
 import com.android.systemui.statusbar.pipeline.ims.ui.VoLteBindableIcon
+import com.android.systemui.statusbar.pipeline.ims.ui.VoNrBindableIcon
 import com.android.systemui.statusbar.pipeline.ims.ui.VoWifiBindableIcon
 import com.android.systemui.statusbar.pipeline.satellite.ui.DeviceBasedSatelliteBindableIcon
 import javax.inject.Inject
@@ -43,6 +44,7 @@ class BindableIconsRegistryImpl
 constructor(
     voWifi: VoWifiBindableIcon,
     voLte: VoLteBindableIcon,
+    voNr: VoNrBindableIcon,
     /** Bindables go here */
     oemSatellite: DeviceBasedSatelliteBindableIcon
 ) : BindableIconsRegistry {
@@ -50,5 +52,5 @@ constructor(
      * Adding the injected bindables to this list will get them registered with
      * StatusBarIconController
      */
-    override val bindableIcons: List<BindableIcon> = listOf(voWifi, voLte, oemSatellite)
+    override val bindableIcons: List<BindableIcon> = listOf(voWifi, voLte, voNr, oemSatellite)
 }
