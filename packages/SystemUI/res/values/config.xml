@@ -102,12 +102,12 @@
 
     <!-- The default tiles to display in QuickSettings -->
     <string name="quick_settings_tiles_default" translatable="false">
-        internet,bt,flashlight,dnd,alarm,airplane,controls,wallet,rotation,battery,cast,screenrecord,mictoggle,cameratoggle,custom(com.android.permissioncontroller/.permission.service.v33.SafetyCenterQsTileService)
+        wifi,cell,bt,custom(com.dolby.daxappui/.DaxTileService),flashlight,dnd,battery,airplane,cameratoggle,mictoggle,location,screenrecord,hotspot,saver,custom(com.google.android.gms/.nearby.sharing.SharingTileService),night,dark,custom(com.google.android.googlequicksearchbox/com.google.android.apps.search.soundsearch.quicksettings.SoundSearchTileService),custom(com.google.android.apps.nbu.files/.quicksettings.StorageAssistantTileService),custom(com.google.android.apps.wellbeing/.focusmode.quicksettings.FocusModeTileService),rotation,qr_code_scanner,cast,controls
     </string>
 
     <!-- The default tiles to display in QuickSettings with the new UI -->
     <string name="quick_settings_tiles_new_default" translatable="false">
-        internet,bt,dnd,cast,flashlight,airplane,rotation,wallet,alarm,controls,screenrecord,battery
+        wifi,cell,bt,hotspot,airplane,custom(com.google.android.gms/.nearby.sharing.SharingTileService),custom(com.dolby.daxappui/.DaxTileService),saver,battery,cameratoggle,mictoggle,flashlight,custom(com.google.android.googlequicksearchbox/com.google.android.apps.search.soundsearch.quicksettings.SoundSearchTileService),location,screenrecord,dnd,cast,reduce_brightness,custom(com.google.android.apps.wellbeing/.focusmode.quicksettings.FocusModeTileService),night,dark,custom(com.google.android.apps.nbu.files/.quicksettings.StorageAssistantTileService),rotation,controls,wallet,qr_code_scanner
     </string>
 
     <!-- The class path of the Safety Quick Settings Tile -->
