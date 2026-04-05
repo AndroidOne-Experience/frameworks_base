@@ -14,7 +14,6 @@
 
 package com.android.systemui.statusbar.phone;
 
-import static com.android.settingslib.flags.Flags.newStatusBarIcons;
 import static com.android.systemui.plugins.DarkIconDispatcher.getTint;
 
 import android.animation.ArgbEvaluator;
@@ -26,6 +25,7 @@ import android.util.ArrayMap;
 import android.view.Display;
 import android.widget.ImageView;
 
+import com.android.settingslib.StatusBarIconSettings;
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.DisplayAware;
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.LifecycleListener;
 import com.android.systemui.display.dagger.SystemUIDisplaySubcomponent.PerDisplaySingleton;
@@ -74,7 +74,7 @@ public class DarkIconDispatcherImpl implements SysuiDarkIconDispatcher,
             LightBarTransitionsController.Factory lightBarTransitionsControllerFactory,
             DumpManager dumpManager) {
         mDumpManager = dumpManager;
-        if (newStatusBarIcons()) {
+        if (StatusBarIconSettings.useNewStatusBarIcons(context)) {
             mDarkModeIconColorSingleTone = Color.BLACK;
             mLightModeIconColorSingleTone = Color.WHITE;
         } else {
