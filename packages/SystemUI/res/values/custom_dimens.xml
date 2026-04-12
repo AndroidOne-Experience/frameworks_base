@@ -13,7 +13,6 @@
     <dimen name="network_speed_text_size">8dp</dimen>
     <dimen name="network_speed_unit_margin_top">9dp</dimen>
     <dimen name="network_speed_unit_text_size">6dp</dimen>
-    <dimen name="network_speed_view_padding_end">2dp</dimen>
     <dimen name="network_speed_view_width">22dp</dimen>
 
     <!-- Smartspace -->
