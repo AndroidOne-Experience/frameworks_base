@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2016-2025 AndroidOne Experience
+     SPDX-License-Identifier: Apache-2.0
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Label for UI element which allows deleting the screenshot [CHAR LIMIT=30] -->
+    <string name="screenshot_delete_label">Удалить</string>
+
+    <!-- Content description indicating that tapping the element will allow deleting the screenshot [CHAR LIMIT=NONE] -->
+    <string name="screenshot_delete_description">Удалить скриншот</string>
+
+    <!-- Text while recognizing face -->
+    <string name="face_unlock_recognizing">Распознавание лица...</string>
+
+    <!-- Advanced restart menu -->
+    <!-- Button to indicate more options -->
+    <string name="global_action_restart_more">Ещё</string>
+    <!-- Button to restart the device, within the Restart Options dialog -->
+    <string name="global_action_restart_system">Система</string>
+    <!-- Button to restart the device into recovery mode, within the Restart Options dialog -->
+    <string name="global_action_restart_recovery">Рекавери</string>
+    <!-- Button to restart the device into bootloader mode, within the Restart Options dialog -->
+    <string name="global_action_restart_bootloader">Фастбут</string>
+    <!-- Button to restart the device into download mode, within the Restart Options dialog -->
+    <string name="global_action_restart_download">Загрузка</string>
+    <!-- Restart progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_progress">Перезагрузка\u2026</string>
+    <!-- Restart to recovery mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_recovery_progress">Перезагрузка в рекавери\u2026</string>
+    <!-- Restart to bootloader mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_bootloader_progress">Перезагрузка в фастбут\u2026</string>
+    <!-- Restart to download mode progress dialog. This is shown if the user chooses to restart the device. -->
+    <string name="global_action_restart_download_progress">Перезагрузка в режим загрузки\u2026</string>
+    <!-- Button to restart SystemUI, within the Restart Options dialog -->
+    <string name="global_action_restart_systemui">SystemUI</string>
+
+    <!-- Flashlight Strength -->
+    <string name="flashlight_strength_title">Яркость фонарика</string>
+    <string name="flashlight_strength_turn_off">Выключить</string>
+    <string name="flashlight_strength_turn_on">Включить</string>
+
+    <!-- Name of the NFC status bar icon -->
+    <string name="status_bar_nfc">NFC</string>
+    
+    <!-- Accessibility label for nfc icon (not shown on screen) [CHAR LIMIT=NONE] -->
+    <string name="accessibility_status_bar_nfc">NFC</string>
+
+    <!-- Status bar - icons -->
+    <string name="status_bar_icons_title">Иконочки строки состояния</string>
+
+    <!-- Internet -->
+    <string name="status_bar_settings_network_speed">Скорость интернета</string>
+
+    <!-- Name of the roaming status bar icon. -->
+    <string name="status_bar_roaming">Индикатор роуминга</string>
+
+    <!-- Data off indicator -->
+    <string name="data_disabled_icon_title">Индикатор отключённых данных</string>
+
+    <!-- 4G icon -->
+    <string name="fourg_icon_title">Индикатор сети 4G</string>
+
+    <!-- Name of the VoLTE status bar tuner toggle. -->
+    <string name="status_bar_volte_icon_title">VoLTE</string>
+    <!-- Name of the VoNR status bar tuner toggle. -->
+    <string name="status_bar_vonr_icon_title">VoNR</string>
+    <!-- Name of the VoWiFi status bar tuner toggle. -->
+    <string name="status_bar_vowifi_icon_title">VoWiFi</string>
+
+    <!-- Smartspace -->
+    <string name="accessibility_next_alarm">Следующий будильник в %s</string>
+    <string name="accessibility_smartspace_page">Страница %1$d из %2$d</string>
+    <string name="active_mode_content_description">%1$s включён</string>
+    <string name="generic_smartspace_concatenated_desc">%1$s, %2$s</string>
+    <string name="music_controls_no_title">Без названия</string>
+    <string name="smartspace_content_desc">Кратко</string>
+    <string name="smartspace_flight_qr_code">QR-код</string>
+    <string name="smartspace_icu_date_pattern">EEEMMMd</string>
+    <string name="smartspace_role_desc">Просмотр</string>
+
+    <!-- QS button to enable adaptive brightness -->
+    <string name="accessibility_adaptive_brightness">Адаптивная яркость</string>
+
+    <!-- Classic status bar icons -->
+    <string name="status_bar_classic_icons_title">Классические иконки</string>
+    <string name="status_bar_classic_icons_summary">Использовать классические иконки строки состояния</string>
+
+</resources>
