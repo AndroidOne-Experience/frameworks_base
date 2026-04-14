@@ -83,4 +83,8 @@
     <!-- QS button to enable adaptive brightness -->
     <string name="accessibility_adaptive_brightness">Адаптивная яркость</string>
 
+    <!-- Classic status bar icons -->
+    <string name="status_bar_classic_icons_title">Классические иконки</string>
+    <string name="status_bar_classic_icons_summary">Использовать классические иконки строки состояния</string>
+
 </resources>
