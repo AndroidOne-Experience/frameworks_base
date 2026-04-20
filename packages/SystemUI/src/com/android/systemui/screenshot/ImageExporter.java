@@ -34,6 +34,7 @@ import android.os.SystemClock;
 import android.os.Trace;
 import android.os.UserHandle;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
 
@@ -70,8 +71,16 @@ public class ImageExporter {
     // ex: 'Screenshot_20201215-090626-display-1.png'
     private static final String CONNECTED_DISPLAY_FILENAME_PATTERN =
             "Screenshot_%1$tY%<tm%<td-%<tH%<tM%<tS-display-%2$d.%3$s";
+    // When screen capture override is enabled, avoid screenshot-specific names and paths that
+    // apps can trivially infer from MediaStore updates.
+    private static final String DISGUISED_FILENAME_PATTERN =
+            "IMG_%1$tY%<tm%<td_%<tH%<tM%<tS.%2$s";
+    private static final String DISGUISED_CONNECTED_DISPLAY_FILENAME_PATTERN =
+            "IMG_%1$tY%<tm%<td_%<tH%<tM%<tS-display-%2$d.%3$s";
     private static final String SCREENSHOTS_PATH = Environment.DIRECTORY_PICTURES
             + File.separator + Environment.DIRECTORY_SCREENSHOTS;
+    private static final String DISGUISED_CAPTURES_PATH =
+            Environment.DIRECTORY_DCIM + File.separator + "Camera";
 
     private static final String RESOLVER_INSERT_RETURNED_NULL =
             "ContentResolver#insert returned null.";
@@ -158,7 +167,8 @@ public class ImageExporter {
         ZonedDateTime captureTime = ZonedDateTime.now(ZoneId.systemDefault());
         return export(executor,
                 new Task(mResolver, requestId, bitmap, captureTime, mCompressFormat,
-                        mQuality, owner, createFilename(captureTime, mCompressFormat, displayId)));
+                        mQuality, owner, createFilename(captureTime, mCompressFormat, displayId,
+                                shouldDisguiseScreenshot(mResolver))));
     }
 
     /**
@@ -196,7 +206,8 @@ public class ImageExporter {
     public ListenableFuture<Result> export(Executor executor, UUID requestId, Bitmap bitmap,
             ZonedDateTime captureTime, UserHandle owner, int displayId) {
         return export(executor, new Task(mResolver, requestId, bitmap, captureTime, mCompressFormat,
-                mQuality, owner, createFilename(captureTime, mCompressFormat, displayId)));
+                mQuality, owner, createFilename(captureTime, mCompressFormat, displayId,
+                        shouldDisguiseScreenshot(mResolver))));
     }
 
     /**
@@ -354,7 +365,8 @@ public class ImageExporter {
             boolean allowOverwrite) throws ImageExportException {
         Trace.beginSection("ImageExporter_createEntry");
         try {
-            final ContentValues values = createMetadata(time, format, fileName);
+            final ContentValues values = createMetadata(time, format, fileName,
+                    shouldDisguiseScreenshot(resolver));
 
             Uri baseUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
             Uri uriWithUserId = ContentProvider.maybeAddUserId(baseUri, owner.getIdentifier());
@@ -466,11 +478,21 @@ public class ImageExporter {
 
     @VisibleForTesting
     static String createFilename(ZonedDateTime time, CompressFormat format, int displayId) {
+        return createFilename(time, format, displayId, false);
+    }
+
+    static String createFilename(
+            ZonedDateTime time, CompressFormat format, int displayId, boolean disguised) {
         if (displayId == Display.DEFAULT_DISPLAY) {
-            return String.format(FILENAME_PATTERN, time, fileExtension(format));
+            return String.format(disguised ? DISGUISED_FILENAME_PATTERN : FILENAME_PATTERN, time,
+                    fileExtension(format));
         }
-        return String.format(CONNECTED_DISPLAY_FILENAME_PATTERN, time, displayId,
-            fileExtension(format));
+        return String.format(
+                disguised ? DISGUISED_CONNECTED_DISPLAY_FILENAME_PATTERN
+                        : CONNECTED_DISPLAY_FILENAME_PATTERN,
+                time,
+                displayId,
+                fileExtension(format));
     }
 
     @VisibleForTesting
@@ -480,8 +502,14 @@ public class ImageExporter {
 
     static ContentValues createMetadata(ZonedDateTime captureTime, CompressFormat format,
             String fileName) {
+        return createMetadata(captureTime, format, fileName, false);
+    }
+
+    static ContentValues createMetadata(ZonedDateTime captureTime, CompressFormat format,
+            String fileName, boolean disguised) {
         ContentValues values = new ContentValues();
-        values.put(MediaStore.MediaColumns.RELATIVE_PATH, SCREENSHOTS_PATH);
+        values.put(MediaStore.MediaColumns.RELATIVE_PATH,
+                disguised ? DISGUISED_CAPTURES_PATH : SCREENSHOTS_PATH);
         values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
         values.put(MediaStore.MediaColumns.MIME_TYPE, getMimeType(format));
         values.put(MediaStore.MediaColumns.DATE_ADDED, captureTime.toEpochSecond());
@@ -490,6 +518,10 @@ public class ImageExporter {
                 captureTime.plus(PENDING_ENTRY_TTL).toEpochSecond());
         values.put(MediaStore.MediaColumns.IS_PENDING, 1);
         return values;
+    }
+
+    private static boolean shouldDisguiseScreenshot(ContentResolver resolver) {
+        return Settings.Global.getInt(resolver, Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) != 0;
     }
 
     static void updateExifAttributes(ExifInterface exif, UUID uniqueId, int width, int height,
