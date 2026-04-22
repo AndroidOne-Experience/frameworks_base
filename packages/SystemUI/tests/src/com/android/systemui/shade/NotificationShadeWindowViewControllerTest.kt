@@ -181,7 +181,6 @@ class NotificationShadeWindowViewControllerTest(flags: FlagsParameterization) : 
     private val notificationLaunchAnimationRepository = NotificationLaunchAnimationRepository()
     private val notificationLaunchAnimationInteractor =
         NotificationLaunchAnimationInteractor(notificationLaunchAnimationRepository)
-    @Mock private lateinit var qqsGestureListener: QQSGestureListener
 
     private val brightnessMirrorShowingRepository = BrightnessMirrorShowingRepository()
     private val brightnessMirrorShowingInteractor =
@@ -278,7 +277,6 @@ class NotificationShadeWindowViewControllerTest(flags: FlagsParameterization) : 
                 kosmos.shadeStatusBarComponentsInteractor,
                 kosmos.dozeTouchInteractor,
                 kosmos.javaAdapter,
-                qqsGestureListener,
             )
         underTest.setupExpandedStatusBar()
         underTest.setDragDownHelper(dragDownHelper)
