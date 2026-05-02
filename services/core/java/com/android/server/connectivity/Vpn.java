@@ -419,6 +419,16 @@ public class Vpn {
     @VisibleForTesting protected boolean mAlwaysOn = false;
 
     /**
+     * Whether a persisted always-on VPN setting needs another restore attempt, for example if the
+     * initial boot-time load happened before the VPN app or profile was fully available.
+     *
+     * <p>This is only used for state loaded from Settings. Explicit user changes clear it so the
+     * current toggle state is respected immediately.
+     */
+    @GuardedBy("this")
+    private boolean mAlwaysOnNeedsRetry = false;
+
+    /**
      * Whether to disable traffic outside of this VPN even when the VPN is not connected. System
      * apps can still bypass by choosing explicit networks. Has no effect if {@link mAlwaysOn} is
      * not set. Applies to all types of VPNs.
@@ -986,6 +996,7 @@ public class Vpn {
             return false;
         }
 
+        mAlwaysOnNeedsRetry = false;
         saveAlwaysOnPackage();
 
         if (shouldNotifyOldPkg) {
@@ -1024,7 +1035,7 @@ public class Vpn {
     private boolean setAlwaysOnPackageInternal(
             @Nullable String packageName, boolean lockdown,
             @Nullable List<String> lockdownAllowlist) {
-        if (!isAlwaysOnPackageSupported(packageName)) {
+        if (packageName != null && !isAlwaysOnPackageSupported(packageName)) {
             return false;
         }
         if (VpnConfig.LEGACY_VPN.equals(packageName)) {
@@ -1141,8 +1152,9 @@ public class Vpn {
                     LOCKDOWN_ALLOWLIST_SETTING_NAME, mUserId);
             final List<String> allowedPackages = TextUtils.isEmpty(allowlistString)
                     ? Collections.emptyList() : Arrays.asList(allowlistString.split(","));
-            setAlwaysOnPackageInternal(
+            final boolean loaded = setAlwaysOnPackageInternal(
                     alwaysOnPackage, alwaysOnLockdown, allowedPackages);
+            mAlwaysOnNeedsRetry = !TextUtils.isEmpty(alwaysOnPackage) && !loaded;
         } finally {
             Binder.restoreCallingIdentity(token);
         }
@@ -1157,6 +1169,11 @@ public class Vpn {
     public boolean startAlwaysOnVpn() {
         final String alwaysOnPackage;
         synchronized (this) {
+            if (!mAlwaysOn && mAlwaysOnNeedsRetry) {
+                // Retry only persisted restore failures. Explicit user changes clear the retry
+                // state so disabling always-on does not re-enable it here.
+                loadAlwaysOnPackage();
+            }
             alwaysOnPackage = getAlwaysOnPackage();
             // Skip if there is no service to start.
             if (alwaysOnPackage == null) {
