@@ -120,7 +120,9 @@ constructor(
         }
 
         fun getSmartspaceHorizontalMargin(context: Context): Int {
-            return context.resources.getDimensionPixelSize(R.dimen.smartspace_padding_horizontal) +
+            return context.resources.getDimensionPixelSize(
+                R.dimen.keyguard_smartspace_horizontal_margin
+            ) +
                 context.resources.getDimensionPixelSize(clocksR.dimen.status_view_margin_horizontal)
         }
     }
