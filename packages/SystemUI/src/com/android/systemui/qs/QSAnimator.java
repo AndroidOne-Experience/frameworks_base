@@ -115,6 +115,12 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     // Brightness slider opacity driver. Uses linear interpolator.
     @Nullable
     private TouchAnimator mBrightnessOpacityAnimator;
+    // Volume slider translation driver, uses mQSExpansionPathInterpolator.yInterpolator.
+    @Nullable
+    private TouchAnimator mVolumeTranslationAnimator;
+    // Volume slider opacity driver. Uses linear interpolator.
+    @Nullable
+    private TouchAnimator mVolumeOpacityAnimator;
     // Height animator for QQS tiles (height changing from QQS size to QS size)
     @Nullable
     private HeightExpansionAnimator mQQSTileHeightAnimator;
@@ -424,7 +430,7 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
             }
         }
 
-        animateBrightnessSlider();
+        animateSliders();
 
         mFirstPageAnimator = firstPageBuilder
                 // Fade in the tiles/labels as we reach the final position.
@@ -553,9 +559,11 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
         return new Pair<>(animator, builder.build());
     }
 
-    private void animateBrightnessSlider() {
+    private void animateSliders() {
         mBrightnessTranslationAnimator = null;
         mBrightnessOpacityAnimator = null;
+        mVolumeTranslationAnimator = null;
+        mVolumeOpacityAnimator = null;
         View qsBrightness = mQsPanelController.getBrightnessView();
         View qqsBrightness = mQuickQSPanelController.getBrightnessView();
         if (qqsBrightness != null && qqsBrightness.getVisibility() == View.VISIBLE) {
@@ -603,6 +611,44 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
                     .build();
             mAllViews.add(qsBrightness);
         }
+
+        Pair<TouchAnimator, TouchAnimator> volumeAnimators =
+                createExpandedOnlySliderAnimators(mQsPanelController.getVolumeView());
+        if (volumeAnimators != null) {
+            mVolumeTranslationAnimator = volumeAnimators.first;
+            mVolumeOpacityAnimator = volumeAnimators.second;
+        }
+    }
+
+    @Nullable
+    private Pair<TouchAnimator, TouchAnimator> createExpandedOnlySliderAnimators(
+            @Nullable View qsSlider) {
+        if (qsSlider == null) {
+            return null;
+        }
+
+        // The slider's visible bottom edge must maintain a constant margin from the QS tiles
+        // during transition. Match the tile movement and compensate for the center-based scaling.
+        View quickSettingsRootView = mQsRootView;
+        View qsTileLayout = (View) mQsPanelController.getTileLayout();
+        View qqsTileLayout = (View) mQuickQSPanelController.getTileLayout();
+        getRelativePosition(mTmpLoc1, qsTileLayout, quickSettingsRootView);
+        getRelativePosition(mTmpLoc2, qqsTileLayout, quickSettingsRootView);
+        int tileMovement = mTmpLoc2[1] - mTmpLoc1[1];
+
+        float scaleCompensation = qsSlider.getMeasuredHeight() * 0.5f;
+        TouchAnimator translationAnimator = new Builder()
+                .addFloat(qsSlider, "translationY", scaleCompensation + tileMovement, 0)
+                .addFloat(qsSlider, "sliderScaleY", 0, 1)
+                .setInterpolator(mQSExpansionPathInterpolator.getYInterpolator())
+                .build();
+        TouchAnimator opacityAnimator = new Builder()
+                .addFloat(qsSlider, "alpha", 0, 1)
+                .setStartDelay(0.2f)
+                .setEndDelay(1 - 0.5f)
+                .build();
+        mAllViews.add(qsSlider);
+        return Pair.create(translationAnimator, opacityAnimator);
     }
 
     private int getRelativeTranslationY(View view1, View view2) {
@@ -690,6 +736,12 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
         }
         if (mBrightnessTranslationAnimator != null) {
             mBrightnessTranslationAnimator.setPosition(position);
+        }
+        if (mVolumeOpacityAnimator != null) {
+            mVolumeOpacityAnimator.setPosition(position);
+        }
+        if (mVolumeTranslationAnimator != null) {
+            mVolumeTranslationAnimator.setPosition(position);
         }
     }
 

@@ -43,6 +43,7 @@ import com.android.systemui.settings.brightness.BrightnessController;
 import com.android.systemui.settings.brightness.BrightnessMirrorHandler;
 import com.android.systemui.settings.brightness.BrightnessSliderController;
 import com.android.systemui.settings.brightness.MirrorController;
+import com.android.systemui.settings.volume.VolumeSliderController;
 import com.android.systemui.shade.ShadeDisplayAware;
 import com.android.systemui.statusbar.phone.StatusBarKeyguardViewManager;
 import com.android.systemui.statusbar.policy.ConfigurationController;
@@ -68,6 +69,7 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
     private final FalsingManager mFalsingManager;
     private BrightnessController mBrightnessController;
     private BrightnessSliderController mBrightnessSliderController;
+    private VolumeSliderController mVolumeSliderController;
     private BrightnessMirrorHandler mBrightnessMirrorHandler;
     private final StatusBarKeyguardViewManager mStatusBarKeyguardViewManager;
     private boolean mListening;
@@ -77,6 +79,7 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
     private int mLastDensity;
     private final BrightnessSliderController.Factory mBrightnessSliderControllerFactory;
     private final BrightnessController.Factory mBrightnessControllerFactory;
+    private final VolumeSliderController.Factory mVolumeSliderControllerFactory;
 
     protected final MediaCarouselInteractor mMediaCarouselInteractor;
 
@@ -99,6 +102,7 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
             DumpManager dumpManager, MetricsLogger metricsLogger, UiEventLogger uiEventLogger,
             QSLogger qsLogger, BrightnessController.Factory brightnessControllerFactory,
             BrightnessSliderController.Factory brightnessSliderFactory,
+            VolumeSliderController.Factory volumeSliderFactory,
             FalsingManager falsingManager,
             StatusBarKeyguardViewManager statusBarKeyguardViewManager,
             SplitShadeStateController splitShadeStateController,
@@ -114,9 +118,12 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         mFalsingManager = falsingManager;
         mBrightnessSliderControllerFactory = brightnessSliderFactory;
         mBrightnessControllerFactory = brightnessControllerFactory;
+        mVolumeSliderControllerFactory = volumeSliderFactory;
 
         mBrightnessSliderController = brightnessSliderFactory.create(getContext(), mView);
         mView.setBrightnessView(mBrightnessSliderController.getRootView());
+        mVolumeSliderController = volumeSliderFactory.create(getContext(), mView);
+        mView.setVolumeView(mVolumeSliderController.getRootView());
 
         mBrightnessController = brightnessControllerFactory.create(mBrightnessSliderController);
         mBrightnessMirrorHandler = new BrightnessMirrorHandler(mBrightnessController);
@@ -134,6 +141,7 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         mMediaHost.init(MediaHierarchyManager.LOCATION_QS);
         mQsCustomizerController.init();
         mBrightnessSliderController.init();
+        mVolumeSliderController.init();
     }
 
     @Override
@@ -157,7 +165,10 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         mBrightnessMirrorHandler.onQsPanelAttached();
         PagedTileLayout pagedTileLayout= ((PagedTileLayout) mView.getOrCreateTileLayout());
         pagedTileLayout.setOnTouchListener(mTileLayoutTouchListener);
-        maybeReinflateBrightnessSlider();
+        maybeReinflateSliders();
+        if (mListening) {
+            mVolumeSliderController.registerCallbacks();
+        }
     }
 
     @Override
@@ -176,30 +187,35 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
     @Override
     protected void onConfigurationChanged() {
         mView.updateResources();
-        maybeReinflateBrightnessSlider();
+        maybeReinflateSliders();
         if (mView.isListening()) {
             refreshAllTiles();
         }
     }
 
-    private void maybeReinflateBrightnessSlider() {
+    private void maybeReinflateSliders() {
         int newDensity = mView.getResources().getConfiguration().densityDpi;
         if (newDensity != mLastDensity) {
             mLastDensity = newDensity;
-            reinflateBrightnessSlider();
+            reinflateSliders();
         }
     }
 
-    private void reinflateBrightnessSlider() {
+    private void reinflateSliders() {
         mBrightnessController.unregisterCallbacks();
+        mVolumeSliderController.unregisterCallbacks();
         mBrightnessSliderController =
                 mBrightnessSliderControllerFactory.create(getContext(), mView);
         mView.setBrightnessView(mBrightnessSliderController.getRootView());
         mBrightnessController = mBrightnessControllerFactory.create(mBrightnessSliderController);
         mBrightnessMirrorHandler.setBrightnessController(mBrightnessController);
         mBrightnessSliderController.init();
+        mVolumeSliderController = mVolumeSliderControllerFactory.create(getContext(), mView);
+        mView.setVolumeView(mVolumeSliderController.getRootView());
+        mVolumeSliderController.init();
         if (mListening) {
             mBrightnessController.registerCallbacks();
+            mVolumeSliderController.registerCallbacks();
         }
     }
 
@@ -226,8 +242,10 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
             //expansion, so it will update the current brightness before the slider is visible.
             if (listening) {
                 mBrightnessController.registerCallbacks();
+                mVolumeSliderController.registerCallbacks();
             } else {
                 mBrightnessController.unregisterCallbacks();
+                mVolumeSliderController.unregisterCallbacks();
             }
         }
     }
@@ -308,4 +326,3 @@ public class QSPanelController extends QSPanelControllerBase<QSPanel> {
         return mView.getBottom();
     }
 }
-

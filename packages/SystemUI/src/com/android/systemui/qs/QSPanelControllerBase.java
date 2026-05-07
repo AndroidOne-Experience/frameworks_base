@@ -616,6 +616,11 @@ public abstract class QSPanelControllerBase<T extends QSPanel> extends ViewContr
         return mView.getBrightnessView();
     }
 
+    @Nullable
+    public View getVolumeView() {
+        return mView.getVolumeView();
+    }
+
     /**
      * Set a listener to collapse/expand QS.
      * @param action

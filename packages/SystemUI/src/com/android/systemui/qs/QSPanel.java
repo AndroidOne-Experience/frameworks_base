@@ -72,6 +72,8 @@ public class QSPanel extends LinearLayout implements Tunable {
     @Nullable
     protected View mBrightnessView;
     @Nullable
+    protected View mVolumeView;
+    @Nullable
     protected BrightnessSliderController mToggleSliderController;
 
     /** Whether or not the QS media player feature is enabled. */
@@ -212,6 +214,27 @@ public class QSPanel extends LinearLayout implements Tunable {
         mBrightnessView = view;
 
         setBrightnessViewMargin();
+        setVolumeViewMargin();
+
+        mMovableContentStartIndex++;
+    }
+
+    /**
+     * Add volume view below the brightness view.
+     *
+     * Used to add the volume slider after construction.
+     */
+    public void setVolumeView(@NonNull View view) {
+        if (mVolumeView != null) {
+            removeView(mVolumeView);
+            mChildrenLayoutTop.remove(mVolumeView);
+            mMovableContentStartIndex--;
+        }
+        addView(view, mBrightnessView != null ? 1 : 0);
+        mVolumeView = view;
+
+        setBrightnessViewMargin();
+        setVolumeViewMargin();
 
         mMovableContentStartIndex++;
     }
@@ -224,10 +247,33 @@ public class QSPanel extends LinearLayout implements Tunable {
                     .getDimensionPixelSize(R.dimen.rounded_slider_boundary_offset);
             lp.topMargin = mContext.getResources()
                     .getDimensionPixelSize(R.dimen.qs_brightness_margin_top) - offset;
+            int bottomMarginRes = isSliderVisible(mVolumeView)
+                    ? R.dimen.qs_volume_margin_top
+                    : R.dimen.qs_brightness_margin_bottom;
             lp.bottomMargin = mContext.getResources()
-                    .getDimensionPixelSize(R.dimen.qs_brightness_margin_bottom) - offset;
+                    .getDimensionPixelSize(bottomMarginRes) - offset;
             mBrightnessView.setLayoutParams(lp);
         }
+    }
+
+    private void setVolumeViewMargin() {
+        if (mVolumeView != null) {
+            MarginLayoutParams lp = (MarginLayoutParams) mVolumeView.getLayoutParams();
+            int offset = getResources()
+                    .getDimensionPixelSize(R.dimen.rounded_slider_boundary_offset);
+            int topMarginRes = isSliderVisible(mBrightnessView)
+                    ? 0
+                    : R.dimen.qs_brightness_margin_top;
+            lp.topMargin = topMarginRes == 0 ? -offset
+                    : mContext.getResources().getDimensionPixelSize(topMarginRes) - offset;
+            lp.bottomMargin = mContext.getResources()
+                    .getDimensionPixelSize(R.dimen.qs_volume_margin_bottom) - offset;
+            mVolumeView.setLayoutParams(lp);
+        }
+    }
+
+    private boolean isSliderVisible(@Nullable View view) {
+        return view != null && view.getVisibility() != View.GONE;
     }
 
     /** */
@@ -352,6 +398,8 @@ public class QSPanel extends LinearLayout implements Tunable {
     public void onTuningChanged(String key, String newValue) {
         if (QS_SHOW_BRIGHTNESS.equals(key) && mBrightnessView != null) {
             updateViewVisibilityForTuningValue(mBrightnessView, newValue);
+            setBrightnessViewMargin();
+            setVolumeViewMargin();
         }
     }
 
@@ -363,6 +411,11 @@ public class QSPanel extends LinearLayout implements Tunable {
     @Nullable
     View getBrightnessView() {
         return mBrightnessView;
+    }
+
+    @Nullable
+    View getVolumeView() {
+        return mVolumeView;
     }
 
     /**
@@ -393,6 +446,7 @@ public class QSPanel extends LinearLayout implements Tunable {
         updatePageIndicator();
 
         setBrightnessViewMargin();
+        setVolumeViewMargin();
 
         if (mTileLayout != null) {
             mTileLayout.updateResources();
