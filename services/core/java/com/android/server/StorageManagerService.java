@@ -3445,7 +3445,12 @@ class StorageManagerService extends IStorageManager.Stub
         final Matcher matcher = KNOWN_APP_DIR_PATHS.matcher(path);
         if (matcher.matches()) {
             if (matcher.group(2) == null) {
-                Log.e(TAG, "Asked to fixup an app dir without a userId: " + path);
+                // Path is on a public/external volume without a userId segment
+                // (e.g. /storage/XXXX-XXXX/Android/data/<pkg>).
+                // Project quota is not applicable on such volumes; skip silently
+                // instead of logging an error that confuses DownloadManager into
+                // treating a fully-written file as a failure.
+                Slog.d(TAG, "Skipping fixup for external volume path (no userId): " + path);
                 return;
             }
             try {
@@ -3454,7 +3459,18 @@ class StorageManagerService extends IStorageManager.Stub
                 int uid = mContext.getPackageManager().getPackageUidAsUser(packageName, userId);
                 try {
                     mVold.fixupAppDir(path + "/", uid);
-                } catch (RemoteException | ServiceSpecificException e) {
+                } catch (ServiceSpecificException e) {
+                    // vold returns EOPNOTSUPP when the underlying filesystem was
+                    // formatted without project-quota support (e.g. f2fs without
+                    // the project_quota feature, as created by some third-party
+                    // recovery tools).  In that case the directory already exists
+                    // with correct ownership from the earlier mkdirs() call, so we
+                    // can safely skip the project-ID assignment rather than leaving
+                    // the directory in a broken state that causes EACCES for the app.
+                    Slog.w(TAG, "fixupAppDir: vold returned error for " + packageName
+                            + " (filesystem may lack project quota support), skipping: "
+                            + e.getMessage());
+                } catch (RemoteException e) {
                     Log.e(TAG, "Failed to fixup app dir for " + packageName, e);
                 }
             } catch (NumberFormatException e) {
@@ -3466,7 +3482,7 @@ class StorageManagerService extends IStorageManager.Stub
             Log.e(TAG, "Path " + path + " is not a valid application-specific directory");
         }
     }
-
+                
     /*
      * Disable storage's app data isolation for testing.
      */
