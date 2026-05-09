@@ -3445,7 +3445,12 @@ class StorageManagerService extends IStorageManager.Stub
         final Matcher matcher = KNOWN_APP_DIR_PATHS.matcher(path);
         if (matcher.matches()) {
             if (matcher.group(2) == null) {
-                Log.e(TAG, "Asked to fixup an app dir without a userId: " + path);
+                // Path is on a public/external volume without a userId segment
+                // (e.g. /storage/XXXX-XXXX/Android/data/<pkg>).
+                // Project quota is not applicable on such volumes; skip silently
+                // instead of logging an error that confuses DownloadManager into
+                // treating a fully-written file as a failure.
+                Slog.d(TAG, "Skipping fixup for external volume path (no userId): " + path);
                 return;
             }
             try {
@@ -3454,7 +3459,44 @@ class StorageManagerService extends IStorageManager.Stub
                 int uid = mContext.getPackageManager().getPackageUidAsUser(packageName, userId);
                 try {
                     mVold.fixupAppDir(path + "/", uid);
-                } catch (RemoteException | ServiceSpecificException e) {
+                } catch (ServiceSpecificException e) {
+                    // vold returns EOPNOTSUPP when the underlying filesystem was
+                    // formatted without project-quota support (e.g. f2fs without
+                    // the project_quota feature, as created by some third-party
+                    // recovery tools).  Fall back to a direct chown/chmod so the
+                    // app can read files it has downloaded into its cache dir.
+                    Slog.w(TAG, "fixupAppDir: vold EOPNOTSUPP for " + packageName
+                            + ", falling back to chown: " + e.getMessage());
+                    try {
+                        // Mirror what vold would do: give the directory to the app uid
+                        // with the shared gid so both the app and group members can access it.
+                        int gid = UserHandle.getSharedAppGid(uid);
+                        Os.chown(path, uid, gid);
+                        Os.chmod(path, OsConstants.S_IRWXU | OsConstants.S_IRWXG
+                                | OsConstants.S_IXOTH);
+                        // Also fix ownership on files already present in the directory
+                        File dir = new File(path);
+                        File[] children = dir.listFiles();
+                        if (children != null) {
+                            for (File child : children) {
+                                Os.chown(child.getAbsolutePath(), uid, gid);
+                                if (child.isDirectory()) {
+                                    Os.chmod(child.getAbsolutePath(),
+                                            OsConstants.S_IRWXU | OsConstants.S_IRWXG
+                                            | OsConstants.S_IXOTH);
+                                } else {
+                                    Os.chmod(child.getAbsolutePath(),
+                                            OsConstants.S_IRUSR | OsConstants.S_IWUSR
+                                            | OsConstants.S_IRGRP | OsConstants.S_IWGRP
+                                            | OsConstants.S_IXOTH);
+                                }
+                            }
+                        }
+                    } catch (ErrnoException fallbackEx) {
+                        Slog.e(TAG, "fixupAppDir: chown fallback also failed for "
+                                + packageName + ": " + fallbackEx.getMessage());
+                    }
+                } catch (RemoteException e) {
                     Log.e(TAG, "Failed to fixup app dir for " + packageName, e);
                 }
             } catch (NumberFormatException e) {
