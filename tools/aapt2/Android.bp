@@ -34,13 +34,11 @@ cc_defaults {
     name: "aapt2_defaults",
     cpp_std: "gnu++2b",
     cflags: [
-        "-O3",
         "-Wall",
         "-Werror",
         "-Wno-unused-parameter",
     ],
     cppflags: [
-        "-O3",
         "-Wno-missing-field-initializers",
         "-fno-exceptions",
         "-fno-rtti",
@@ -50,11 +48,11 @@ cc_defaults {
         windows: {
             compile_multilib: "64",
             enabled: true,
-            cflags: ["-O3", "-Wno-maybe-uninitialized"],
+            cflags: ["-Wno-maybe-uninitialized"],
             ldflags: ["-static"],
         },
         darwin: {
-            cflags: ["-O3", "-D_DARWIN_UNLIMITED_STREAMS"],
+            cflags: ["-D_DARWIN_UNLIMITED_STREAMS"],
         },
     },
     header_libs: [
