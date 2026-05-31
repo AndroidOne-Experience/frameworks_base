@@ -646,6 +646,8 @@ public class AudioService extends IAudioService.Stub
     }
 
     private SettingsObserver mSettingsObserver;
+    private final boolean mSstEffectSupport;
+    private final MotoSSTSoundHelper mMotoSSTSoundHelper;
 
     private AtomicInteger mMode = new AtomicInteger(AudioSystem.MODE_NORMAL);
 
@@ -1432,6 +1434,9 @@ public class AudioService extends IAudioService.Stub
         mContext = context;
         mContentResolver = context.getContentResolver();
         mAppOps = appOps;
+        mSstEffectSupport = SystemProperties.getBoolean(
+                "ro.vendor.audio.moto_sst_supported", false);
+        mMotoSSTSoundHelper = mSstEffectSupport ? new MotoSSTSoundHelper(context) : null;
 
         mPermissionProvider = permissionProvider;
         mAudioServerLifecycleExecutor = audioserverLifecycleExecutor;
@@ -1897,6 +1902,9 @@ public class AudioService extends IAudioService.Stub
                     rotation -> onRotationUpdate(rotation),
                     foldState -> onFoldStateUpdate(foldState));
         }
+        if (mSstEffectSupport) {
+            mMotoSSTSoundHelper.checkAndInitSstInstance();
+        }
 
         intentFilter.addAction(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION);
         intentFilter.addAction(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION);
@@ -1974,6 +1982,9 @@ public class AudioService extends IAudioService.Stub
         mSystemReady = true;
         setupPermissionListener();
         scheduleLoadSoundEffects();
+        if (mSstEffectSupport) {
+            mMotoSSTSoundHelper.checkAndInitSstInstance();
+        }
         mDeviceBroker.onSystemReady();
 
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_HDMI_CEC)) {
@@ -11400,6 +11411,10 @@ public class AudioService extends IAudioService.Stub
 
             mContentResolver.registerContentObserver(Settings.Secure.getUriFor(
                     Settings.Secure.VOICE_INTERACTION_SERVICE), false, this);
+            if (mSstEffectSupport) {
+                mContentResolver.registerContentObserver(
+                        MotoSSTSoundHelper.MOTOROLA_GLOBAL_SETTINGS_URI, true, this);
+            }
         }
 
         @Override
@@ -11429,6 +11444,10 @@ public class AudioService extends IAudioService.Stub
 
             synchronized (mAssistantUidLock) {
                 updateAssistantUIdLocked(/* forceUpdate= */ false);
+            }
+
+            if (mSstEffectSupport) {
+                mMotoSSTSoundHelper.checkAndInitSstInstance();
             }
         }
 
