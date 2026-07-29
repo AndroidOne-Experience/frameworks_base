@@ -104,6 +104,16 @@ public class PropImitationHooks {
         "FINGERPRINT", "google/blueline/blueline:11/RQ2A.210305.006/7119741:user/release-keys"
     );
 
+    private static final Map<String, String> sXiaomi11LProps = Map.of(
+        "PRODUCT", "renoir_global",
+        "DEVICE", "renoir",
+        "MANUFACTURER", "Xiaomi",
+        "BRAND", "Xiaomi",
+        "MODEL", "M2101K9G",
+        "ID", "TKQ1.220829.002",
+        "FINGERPRINT", "Xiaomi/renoir_global/renoir:13/TKQ1.220829.002/V14.0.7.0.TKIMIXM:user/release-keys"
+    );
+
     private static volatile List<String> sCertifiedProps = new ArrayList<>();
     private static volatile String sStockFp;
 
@@ -135,7 +145,8 @@ public class PropImitationHooks {
         /* Set Certified Properties for GMSCore
          * Set Stock Fingerprint for ARCore
          * Set Pixel XL for Google Photos
-         * Set Pixel 3 for Netflix
+         * Set Pixel 3 for Google Wallpaper
+         * Set Xiaomi 11 Lite for Netflix
          */
         if (sIsGms || sIsFinsky) {
             if (!android.os.Process.isIsolated()) {
@@ -149,10 +160,12 @@ public class PropImitationHooks {
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
             sPixelXLProps.forEach((PropImitationHooks::setPropValue));
-        } else if (packageName.equals(PACKAGE_NETFLIX)
-                || PIXEL_WALLPAPER_PACKAGES.contains(packageName)) {
+        } else if (PIXEL_WALLPAPER_PACKAGES.contains(packageName)) {
             dlog("Setting model to Pixel 3 for: " + packageName);
             sPixel3Props.forEach(PropImitationHooks::setPropValue);
+        } else if (packageName.equals(PACKAGE_NETFLIX)) {
+            dlog("Setting model to Xiaomi 11 Lite for: " + packageName);
+            sXiaomi11LProps.forEach(PropImitationHooks::setPropValue);
         }
     }
 
