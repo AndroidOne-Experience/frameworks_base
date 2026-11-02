@@ -835,6 +835,8 @@ public class WindowManagerService extends IWindowManager.Stub
                 Settings.Secure.getUriFor(Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS);
         private final Uri mDisableSecureWindowsUri =
                 Settings.Secure.getUriFor(Settings.Secure.DISABLE_SECURE_WINDOWS);
+        private final Uri mScreenCaptureOverrideUri =
+                Settings.Global.getUriFor(Settings.Global.SCREEN_CAPTURE_OVERRIDE);
         private final Uri mMagnifyImeEnabledUri = Settings.Secure.getUriFor(
                 Settings.Secure.ACCESSIBILITY_MAGNIFICATION_MAGNIFY_NAV_AND_IME);
         private final Uri mPolicyControlUri =
@@ -868,6 +870,8 @@ public class WindowManagerService extends IWindowManager.Stub
             resolver.registerContentObserver(mImmersiveModeConfirmationsUri, false, this,
                     UserHandle.USER_ALL);
             resolver.registerContentObserver(mDisableSecureWindowsUri, false, this,
+                    UserHandle.USER_ALL);
+            resolver.registerContentObserver(mScreenCaptureOverrideUri, false, this,
                     UserHandle.USER_ALL);
             if (com.android.server.accessibility.Flags.enableMagnificationMagnifyNavBarAndIme()) {
                 resolver.registerContentObserver(mMagnifyImeEnabledUri, false, this,
@@ -934,6 +938,11 @@ public class WindowManagerService extends IWindowManager.Stub
                 return;
             }
 
+            if (mScreenCaptureOverrideUri.equals(uri)) {
+                updateScreenCaptureOverride();
+                return;
+            }
+
             if (mMagnifyImeEnabledUri.equals(uri)) {
                 updateMagnifyIme();
             }
@@ -962,6 +971,7 @@ public class WindowManagerService extends IWindowManager.Stub
         void loadSettings() {
             updateMaximumObscuringOpacityForTouch();
             updateDisableSecureWindows();
+            updateScreenCaptureOverride();
             updateMagnifyIme();
         }
 
@@ -1068,6 +1078,20 @@ public class WindowManagerService extends IWindowManager.Stub
 
             synchronized (mGlobalLock) {
                 mDisableSecureWindows = disableSecureWindows;
+                mRoot.refreshSecureSurfaceState();
+            }
+        }
+
+        void updateScreenCaptureOverride() {
+            boolean screenCaptureOverride = Settings.Global.getInt(
+                    mContext.getContentResolver(),
+                    Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) != 0;
+            if (mScreenCaptureOverride == screenCaptureOverride) {
+                return;
+            }
+
+            synchronized (mGlobalLock) {
+                mScreenCaptureOverride = screenCaptureOverride;
                 mRoot.refreshSecureSurfaceState();
             }
         }
@@ -1247,6 +1271,7 @@ public class WindowManagerService extends IWindowManager.Stub
     private final ScreenRecordingCallbackController mScreenRecordingCallbackController;
 
     private volatile boolean mDisableSecureWindows = false;
+    private volatile boolean mScreenCaptureOverride = false;
 
     /** Creates an instance of the WindowManagerService for the system server. */
     public static WindowManagerService main(@NonNull final Context context,
@@ -7295,6 +7320,7 @@ public class WindowManagerService extends IWindowManager.Stub
         });
         pw.print("  mBlurEnabled="); pw.println(mBlurController.getBlurEnabled());
         pw.print("  mDisableSecureWindows="); pw.println(mDisableSecureWindows);
+        pw.print("  mScreenCaptureOverride="); pw.println(mScreenCaptureOverride);
 
         mInputManagerCallback.dump(pw, "  ");
         mSnapshotController.dump(pw, " ");
@@ -10926,8 +10952,7 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     boolean getDisableSecureWindows() {
-        return Settings.Global.getInt(mContext.getContentResolver(),
-                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1 || mDisableSecureWindows;
+        return mScreenCaptureOverride || mDisableSecureWindows;
     }
 
     /**
@@ -11042,8 +11067,7 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     private boolean shouldHideScreenCapture() {
-        return Settings.Global.getInt(mContext.getContentResolver(),
-                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) != 0;
+        return mScreenCaptureOverride;
     }
 
 }

@@ -954,9 +954,7 @@ public class SurfaceView extends View implements ViewRootImpl.SurfaceChangedCall
      * @param isSecure True if the surface view is secure.
      */
     public void setSecure(boolean isSecure) {
-        boolean ignoreSecure = Settings.Global.getInt(getContext().getContentResolver(),
-                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1;
-        if (isSecure && !ignoreSecure) {
+        if (isSecure) {
             mSurfaceFlags |= SurfaceControl.SECURE;
         } else {
             mSurfaceFlags &= ~SurfaceControl.SECURE;
@@ -1655,20 +1653,29 @@ public class SurfaceView extends View implements ViewRootImpl.SurfaceChangedCall
         }
 
         if (mBlastSurfaceControl == null) {
+            boolean ignoreSecure = Settings.Global.getInt(getContext().getContentResolver(),
+                    Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1;
+            int flags = mSurfaceFlags;
+            if (ignoreSecure) {
+                flags &= ~SurfaceControl.SECURE;
+            }
             mBlastSurfaceControl = new SurfaceControl.Builder()
                     .setName(name + "(BLAST)")
                     .setLocalOwnerView(this)
                     .setParent(mSurfaceControl)
-                    .setFlags(mSurfaceFlags)
+                    .setFlags(flags)
                     .setHidden(false)
                     .setBLASTLayer()
                     .setCallsite("SurfaceView.updateSurface")
                     .build();
         } else {
             // update blast layer
+            boolean ignoreSecure = Settings.Global.getInt(getContext().getContentResolver(),
+                    Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1;
             surfaceUpdateTransaction
                     .setOpaque(mBlastSurfaceControl, (mSurfaceFlags & SurfaceControl.OPAQUE) != 0)
-                    .setSecure(mBlastSurfaceControl, (mSurfaceFlags & SurfaceControl.SECURE) != 0)
+                    .setSecure(mBlastSurfaceControl,
+                            (mSurfaceFlags & SurfaceControl.SECURE) != 0 && !ignoreSecure)
                     .show(mBlastSurfaceControl);
         }
 

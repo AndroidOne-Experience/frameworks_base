@@ -53,7 +53,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.transition.Scene;
 import android.transition.Transition;
 import android.transition.TransitionManager;
@@ -1366,10 +1365,6 @@ public abstract class Window {
      * @see #clearFlags
      */
     public void setFlags(int flags, int mask) {
-        if ((mask & FLAG_SECURE) != 0 && Settings.Global.getInt(mContext.getContentResolver(),
-                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1) {
-            mask &= ~FLAG_SECURE;
-        }
         final WindowManager.LayoutParams attrs = getAttributes();
         attrs.flags = (attrs.flags&~mask) | (flags&mask);
         mForcedWindowFlags |= mask;
@@ -1386,10 +1381,6 @@ public abstract class Window {
      * @hide
      */
     protected void dispatchWindowAttributesChanged(WindowManager.LayoutParams attrs) {
-        if ((attrs.flags & FLAG_SECURE) != 0 && Settings.Global.getInt(mContext.getContentResolver(),
-                Settings.Global.SCREEN_CAPTURE_OVERRIDE, 0) == 1) {
-            attrs.flags &= ~FLAG_SECURE;
-        }
         if (mCallback != null) {
             mCallback.onWindowAttributesChanged(attrs);
         }
