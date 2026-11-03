@@ -133,7 +133,7 @@ constructor(
                         return
                     }
                     // Hide incoming chip from sense caller package
-                    if (packageName == "co.aospa.sense") {
+                    if (packageName == "io.androidone.faceunlock") {
                         return
                     }
                     if (
@@ -389,7 +389,7 @@ constructor(
                 else -> return null
             }
         // Hide incoming chip from sense caller package
-        if (appOpItem.packageName == "co.aospa.sense") {
+        if (appOpItem.packageName == "io.androidone.faceunlock") {
             return null
         }
         val app = PrivacyApplication(appOpItem.packageName, appOpItem.uid)
