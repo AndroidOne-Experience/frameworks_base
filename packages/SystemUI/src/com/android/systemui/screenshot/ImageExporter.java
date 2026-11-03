@@ -74,13 +74,13 @@ public class ImageExporter {
     // When screen capture override is enabled, avoid screenshot-specific names and paths that
     // apps can trivially infer from MediaStore updates.
     private static final String DISGUISED_FILENAME_PATTERN =
-            "IMG_%1$tY%<tm%<td_%<tH%<tM%<tS.%2$s";
+            "SS_%1$tY%<tm%<td_%<tH%<tM%<tS.%2$s";
     private static final String DISGUISED_CONNECTED_DISPLAY_FILENAME_PATTERN =
-            "IMG_%1$tY%<tm%<td_%<tH%<tM%<tS-display-%2$d.%3$s";
+            "SS_%1$tY%<tm%<td_%<tH%<tM%<tS-display-%2$d.%3$s";
     private static final String SCREENSHOTS_PATH = Environment.DIRECTORY_PICTURES
             + File.separator + Environment.DIRECTORY_SCREENSHOTS;
     private static final String DISGUISED_CAPTURES_PATH =
-            Environment.DIRECTORY_DCIM + File.separator + "Camera";
+            Environment.DIRECTORY_DCIM + File.separator + "Snapshot";
 
     private static final String RESOLVER_INSERT_RETURNED_NULL =
             "ContentResolver#insert returned null.";
