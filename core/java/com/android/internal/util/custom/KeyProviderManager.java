@@ -5,7 +5,11 @@
 package com.android.internal.util.custom;
 
 import android.app.ActivityThread;
+import android.app.AppGlobals;
+import android.app.Application;
 import android.content.Context;
+import android.os.Binder;
+import android.os.Process;
 import android.provider.Settings;
 import android.util.Log;
 import android.util.Xml;
@@ -19,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Manager class for handling keybox providers.
@@ -33,8 +38,99 @@ public final class KeyProviderManager {
         return new DefaultKeyboxProvider();
     }
 
-    public static boolean isKeyboxAvailable() {
+    public static boolean hasKeybox() {
         return getProvider().hasKeybox();
+    }
+
+    public static boolean isKeyboxAvailable() {
+        return hasKeybox() && isKeyboxEnabledForCallingApp();
+    }
+
+    public static boolean isKeyboxEnabledForCallingApp() {
+        Context context = getApplicationContext();
+        if (context == null) {
+            return false;
+        }
+        return isKeyboxEnabledForApp(context);
+    }
+
+    public static boolean isKeyboxEnabledForApp(Context context) {
+        if (context == null) {
+            return false;
+        }
+        try {
+            Set<String> packageSet = KeyboxPackagesUtils.getPackages(context);
+            if (packageSet == null || packageSet.isEmpty()) {
+                return false;
+            }
+
+            String currentPackage = ActivityThread.currentPackageName();
+            if (currentPackage != null && packageSet.contains(currentPackage)) {
+                return true;
+            }
+
+            String processName = ActivityThread.currentProcessName();
+            if (processName != null) {
+                if (packageSet.contains(processName)) {
+                    return true;
+                }
+                int colonIdx = processName.indexOf(':');
+                if (colonIdx > 0 && packageSet.contains(processName.substring(0, colonIdx))) {
+                    return true;
+                }
+            }
+
+            try {
+                Application app = ActivityThread.currentApplication();
+                if (app != null && packageSet.contains(app.getPackageName())) {
+                    return true;
+                }
+            } catch (Exception ignored) {}
+
+            int uid = Binder.getCallingUid();
+            if (uid == 0) {
+                uid = Process.myUid();
+            }
+            if (uid > 0 && uid != Process.SYSTEM_UID) {
+                try {
+                    String[] packages = null;
+                    if (context.getPackageManager() != null) {
+                        packages = context.getPackageManager().getPackagesForUid(uid);
+                    }
+                    if (packages == null) {
+                        packages = AppGlobals.getPackageManager().getPackagesForUid(uid);
+                    }
+                    if (packages != null) {
+                        for (String pkg : packages) {
+                            if (packageSet.contains(pkg)) {
+                                return true;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking if keybox is enabled for app", e);
+        }
+        return false;
+    }
+
+    private static Context getApplicationContext() {
+        try {
+            Application app = ActivityThread.currentApplication();
+            if (app != null) {
+                Context ctx = app.getApplicationContext();
+                if (ctx != null) return ctx;
+            }
+        } catch (Exception ignored) {}
+        try {
+            ActivityThread at = ActivityThread.currentActivityThread();
+            if (at != null) {
+                Context sysCtx = at.getSystemContext();
+                if (sysCtx != null) return sysCtx;
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     private static class DefaultKeyboxProvider implements IKeyboxProvider {
@@ -149,15 +245,6 @@ public final class KeyProviderManager {
 
             if (!hasKeybox()) {
                 Log.w(TAG, "Incomplete keybox provided by overlays");
-            }
-        }
-
-        private static Context getApplicationContext() {
-            try {
-                return ActivityThread.currentApplication().getApplicationContext();
-            } catch (Exception e) {
-                Log.e(TAG, "Error getting application context", e);
-                return null;
             }
         }
 
