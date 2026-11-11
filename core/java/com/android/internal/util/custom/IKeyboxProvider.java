@@ -23,6 +23,30 @@ public interface IKeyboxProvider {
     boolean hasKeybox();
 
     /**
+     * Checks if a valid EC keybox is available.
+     *
+     * @return true if EC private key and cert chain are available
+     * @hide
+     */
+    default boolean hasEcKeybox() {
+        String key = getEcPrivateKey();
+        String[] chain = getEcCertificateChain();
+        return key != null && !key.isEmpty() && chain != null && chain.length > 0;
+    }
+
+    /**
+     * Checks if a valid RSA keybox is available.
+     *
+     * @return true if RSA private key and cert chain are available
+     * @hide
+     */
+    default boolean hasRsaKeybox() {
+        String key = getRsaPrivateKey();
+        String[] chain = getRsaCertificateChain();
+        return key != null && !key.isEmpty() && chain != null && chain.length > 0;
+    }
+
+    /**
      * Retrieves the EC private key.
      *
      * @return the EC private key as a String

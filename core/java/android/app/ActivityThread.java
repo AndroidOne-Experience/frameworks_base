@@ -500,6 +500,7 @@ public final class ActivityThread extends ClientTransactionHandler
     private boolean mUpdateHttpProxyOnBind = false;
     @UnsupportedAppUsage
     Application mInitialApplication;
+    private Context mSafeAppContext;
     @UnsupportedAppUsage
     final ArrayList<Application> mAllApplications = new ArrayList<>();
     /**
@@ -3127,6 +3128,47 @@ public final class ActivityThread extends ClientTransactionHandler
     public static Context currentSystemContext() {
         ActivityThread am = currentActivityThread();
         return am != null ? am.getSystemContext() : null;
+    }
+
+    /**
+     * Returns an application context for the current process, safe for ContentResolver queries.
+     * Unlike getSystemContext(), this will never return a context claiming to be "android" in an
+     * unprivileged app process.
+     * @hide
+     */
+    public static Context currentSafeApplicationContext() {
+        ActivityThread am = currentActivityThread();
+        return am != null ? am.getSafeApplicationContext() : null;
+    }
+
+    /**
+     * Returns an application context for the current process, safe for ContentResolver queries.
+     * Unlike getSystemContext(), this will never return a context claiming to be "android" in an
+     * unprivileged app process.
+     * @hide
+     */
+    public Context getSafeApplicationContext() {
+        if (mInitialApplication != null) {
+            return mInitialApplication.getApplicationContext();
+        }
+        if (mSafeAppContext != null) {
+            return mSafeAppContext;
+        }
+        if (mBoundApplication != null && mBoundApplication.info != null) {
+            Application app = mBoundApplication.info.getApplication();
+            if (app != null) {
+                mSafeAppContext = app.getApplicationContext();
+                return mSafeAppContext;
+            }
+            try {
+                mSafeAppContext = ContextImpl.createAppContext(this, mBoundApplication.info);
+                return mSafeAppContext;
+            } catch (Exception ignored) {}
+        }
+        if (Process.myUid() == Process.SYSTEM_UID || Process.myUid() == 0) {
+            return getSystemContext();
+        }
+        return null;
     }
 
     @UnsupportedAppUsage

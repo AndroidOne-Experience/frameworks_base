@@ -43,7 +43,7 @@ public final class KeyProviderManager {
     }
 
     public static boolean isKeyboxAvailable() {
-        return hasKeybox() && isKeyboxEnabledForCallingApp();
+        return isKeyboxEnabledForCallingApp() && hasKeybox();
     }
 
     public static boolean isKeyboxEnabledForCallingApp() {
@@ -117,6 +117,10 @@ public final class KeyProviderManager {
 
     private static Context getApplicationContext() {
         try {
+            Context ctx = ActivityThread.currentSafeApplicationContext();
+            if (ctx != null) return ctx;
+        } catch (Exception ignored) {}
+        try {
             Application app = ActivityThread.currentApplication();
             if (app != null) {
                 Context ctx = app.getApplicationContext();
@@ -126,8 +130,13 @@ public final class KeyProviderManager {
         try {
             ActivityThread at = ActivityThread.currentActivityThread();
             if (at != null) {
-                Context sysCtx = at.getSystemContext();
-                if (sysCtx != null) return sysCtx;
+                Application app = at.getApplication();
+                if (app != null) {
+                    Context ctx = app.getApplicationContext();
+                    if (ctx != null) return ctx;
+                }
+                Context ctx = at.getSafeApplicationContext();
+                if (ctx != null) return ctx;
             }
         } catch (Exception ignored) {}
         return null;
@@ -250,13 +259,19 @@ public final class KeyProviderManager {
 
         @Override
         public boolean hasKeybox() {
-            if (!keyboxData.containsKey("EC.PRIV") || !keyboxData.containsKey("RSA.PRIV")) {
-                return false;
-            }
-            if (!keyboxData.containsKey("EC.CERT_1") || !keyboxData.containsKey("RSA.CERT_1")) {
-                return false;
-            }
-            return true;
+            boolean hasEc = keyboxData.containsKey("EC.PRIV") && keyboxData.containsKey("EC.CERT_1");
+            boolean hasRsa = keyboxData.containsKey("RSA.PRIV") && keyboxData.containsKey("RSA.CERT_1");
+            return hasEc || hasRsa;
+        }
+
+        @Override
+        public boolean hasEcKeybox() {
+            return keyboxData.containsKey("EC.PRIV") && keyboxData.containsKey("EC.CERT_1");
+        }
+
+        @Override
+        public boolean hasRsaKeybox() {
+            return keyboxData.containsKey("RSA.PRIV") && keyboxData.containsKey("RSA.CERT_1");
         }
 
         @Override
@@ -281,14 +296,15 @@ public final class KeyProviderManager {
 
         private String[] getCertificateChain(String prefix) {
             List<String> dataList = new ArrayList<>();
-            for (String key : keyboxData.keySet()) {
-                if (key.startsWith(prefix + ".CERT_")) {
+            for (int i = 1; ; i++) {
+                String key = prefix + ".CERT_" + i;
+                if (keyboxData.containsKey(key)) {
                     dataList.add(keyboxData.get(key));
+                } else {
+                    break;
                 }
             }
-            String[] chain = dataList.toArray(String[]::new);
-            Arrays.sort(chain);
-            return chain;
+            return dataList.toArray(String[]::new);
         }
     }
 }

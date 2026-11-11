@@ -9,6 +9,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,6 +21,8 @@ import java.util.Set;
  * @hide
  */
 public final class KeyboxPackagesUtils {
+
+    private static final String TAG = "KeyboxPackagesUtils";
 
     private KeyboxPackagesUtils() {}
 
@@ -34,9 +37,13 @@ public final class KeyboxPackagesUtils {
         if (cr == null) {
             return Collections.emptySet();
         }
-        String packages = Settings.Secure.getString(cr, Settings.Secure.KEYBOX_PACKAGES);
-        if (!TextUtils.isEmpty(packages)) {
-            return new HashSet<>(Arrays.asList(packages.split(",")));
+        try {
+            String packages = Settings.Secure.getString(cr, Settings.Secure.KEYBOX_PACKAGES);
+            if (!TextUtils.isEmpty(packages)) {
+                return new HashSet<>(Arrays.asList(packages.split(",")));
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get packages from secure settings", e);
         }
         return Collections.emptySet();
     }

@@ -75,6 +75,16 @@ public class KeyboxImitationHooks {
             return null;
         }
 
+        IKeyboxProvider provider = KeyProviderManager.getProvider();
+        if (params.algorithm == Algorithm.EC && !provider.hasEcKeybox()) {
+            dlog("EC algorithm requested but no EC keybox available");
+            return null;
+        }
+        if (params.algorithm == Algorithm.RSA && !provider.hasRsaKeybox()) {
+            dlog("RSA algorithm requested but no RSA keybox available");
+            return null;
+        }
+
         int uid = Binder.getCallingUid();
         try {
             List<Certificate> chain = KeyboxChainGenerator.generateCertChain(uid, descriptor, params);

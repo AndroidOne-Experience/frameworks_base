@@ -131,16 +131,24 @@ public class KeyboxUtils {
                 ? provider.getEcPrivateKey()
                 : provider.getRsaPrivateKey();
 
+        if (privateKeyEncoded == null || privateKeyEncoded.trim().isEmpty()) {
+            throw new IllegalStateException("No private key available for algorithm: " + algorithm);
+        }
+
         return parsePrivateKey(privateKeyEncoded, algorithm);
     }
 
     public static X509CertificateHolder getCertificateHolder(String algorithm) throws Exception {
         IKeyboxProvider provider = KeyProviderManager.getProvider();
-        String certPem = KeyProperties.KEY_ALGORITHM_EC.equals(algorithm)
-                ? provider.getEcCertificateChain()[0]
-                : provider.getRsaCertificateChain()[0];
+        String[] chain = KeyProperties.KEY_ALGORITHM_EC.equals(algorithm)
+                ? provider.getEcCertificateChain()
+                : provider.getRsaCertificateChain();
 
-        X509Certificate parsedCert = parseCertificate(certPem);
+        if (chain == null || chain.length == 0 || chain[0] == null) {
+            throw new IllegalStateException("No certificate chain available for algorithm: " + algorithm);
+        }
+
+        X509Certificate parsedCert = parseCertificate(chain[0]);
         return new X509CertificateHolder(parsedCert.getEncoded());
     }
 
