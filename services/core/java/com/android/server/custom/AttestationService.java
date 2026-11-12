@@ -7,13 +7,14 @@
 
 package com.android.server.custom;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
-import android.os.Environment;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -21,10 +22,6 @@ import com.android.server.SystemService;
 import com.android.internal.util.custom.Utils;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -37,8 +34,6 @@ public final class AttestationService extends SystemService {
 
     private static final String TAG = AttestationService.class.getSimpleName();
     private static final String API = "https://raw.githubusercontent.com/AndroidOne-Experience/vendor_certification/refs/heads/main/gms_certified_props.json";
-
-    private static final String DATA_FILE = "gms_certified_props.json";
 
     private static final long INITIAL_DELAY = 0;
     private static final long INTERVAL = 5;
@@ -102,14 +97,25 @@ public final class AttestationService extends SystemService {
     private boolean isInternetConnected() {
         ConnectivityManager cm =
                 (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
         Network nw = cm.getActiveNetwork();
         if (nw == null) return false;
         NetworkCapabilities actNw = cm.getNetworkCapabilities(nw);
         return actNw != null
-                && (actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                        || actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                        || actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-                        || actNw.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH));
+                && actNw.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    private void killPackages() {
+        try {
+            ActivityManager am = mContext.getSystemService(ActivityManager.class);
+            if (am != null) {
+                am.forceStopPackageAsUser("com.google.android.gms", UserHandle.USER_ALL);
+                am.forceStopPackageAsUser("com.android.vending", UserHandle.USER_ALL);
+                Log.i(TAG, "GMS and Vending killed after props update");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to kill packages", e);
+        }
     }
 
     private void dlog(String message) {
@@ -130,9 +136,10 @@ public final class AttestationService extends SystemService {
                 String savedProps = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.FETCHED_PIF);
                 String props = fetchProps();
 
-                if (props != null && !savedProps.equals(props)) {
+                if (props != null && !props.equals(savedProps)) {
                     dlog("Found new props");
                     Settings.Secure.putString(mContext.getContentResolver(), Settings.Secure.FETCHED_PIF, props);
+                    killPackages();
                     dlog("FetchGmsCertifiedProps completed");
                 } else {
                     dlog("No change in props");

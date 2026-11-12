@@ -210,13 +210,15 @@ public class PropImitationHooks {
         } else {
             dlog("Parsing props fetched / provided by user");
             try {
+                List<String> certifiedProps = new ArrayList<>();
                 JSONObject parsedProps = new JSONObject(savedProps);
                 Iterator<String> keys = parsedProps.keys();
                 while (keys.hasNext()) {
                     String key = keys.next();
                     String value = parsedProps.getString(key);
-                    sCertifiedProps.add(key + ":" + value);
+                    certifiedProps.add(key + ":" + value);
                 }
+                sCertifiedProps = certifiedProps;
             } catch (JSONException e) {
                 Log.e(TAG, "Error parsing JSON data", e);
                 dlog("Parsing props locally as fallback");
