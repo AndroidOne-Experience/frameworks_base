@@ -328,16 +328,10 @@ constructor(
                         R.dimen.hover_system_icons_container_padding_bottom
                     ),
                 )
+                updateColors()
             }
 
             override fun onDensityOrFontScaleChanged() {
-                clock.setTextAppearance(R.style.TextAppearance_QS_Status)
-                date.setTextAppearance(R.style.TextAppearance_QS_Status)
-                mShadeCarrierGroup.updateTextAppearanceAndTint(
-                    R.style.TextAppearance_QS_Status,
-                    getFgColor(),
-                    getBgColor(),
-                )
                 loadConstraints()
                 header.minHeight =
                     resources.getDimensionPixelSize(R.dimen.large_screen_shade_header_min_height)
@@ -348,6 +342,7 @@ constructor(
                     // the clock handles the config change itself.
                     clock.onDensityOrFontScaleChanged()
                 }
+                updateColors()
             }
 
             override fun onThemeChanged() {
@@ -380,6 +375,7 @@ constructor(
             batteryMeterViewController.ignoreTunerUpdates()
 
             batteryIcon.isVisible = true
+            batteryIcon.setStaticColor(true)
             batteryIcon.updateColors(
                 fgColor, /* foreground */
                 bgColor, /* background */
@@ -489,6 +485,7 @@ constructor(
         systemIconsHoverContainer.setOnHoverListener(
             statusOverlayHoverListenerFactory.createListener(systemIconsHoverContainer)
         )
+        updateColors()
     }
 
     override fun onViewDetached() {
@@ -548,14 +545,24 @@ constructor(
     }
 
     private fun updateColors() {
+        val fgColor = getFgColor()
+        val bgColor = getBgColor()
         clock.setTextAppearance(R.style.TextAppearance_QS_Status)
         date.setTextAppearance(R.style.TextAppearance_QS_Status)
         mShadeCarrierGroup.updateTextAppearanceAndTint(
             R.style.TextAppearance_QS_Status,
-            getFgColor(),
-            getBgColor(),
+            fgColor,
+            bgColor,
         )
-        iconManager.setTint(getFgColor(), getBgColor())
+        iconManager.setTint(fgColor, bgColor)
+        if (!NewStatusBarIcons.isEnabled) {
+            batteryIcon.setColorsFromContext(header.context)
+            batteryIcon.updateColors(
+                fgColor,
+                bgColor,
+                fgColor,
+            )
+        }
     }
 
     private fun updateCarrierGroupPadding() {
