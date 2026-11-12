@@ -7,12 +7,14 @@
 
 package com.android.server.custom;
 
+import android.annotation.NonNull;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
@@ -35,8 +37,8 @@ public final class AttestationService extends SystemService {
     private static final String TAG = AttestationService.class.getSimpleName();
     private static final String API = "https://raw.githubusercontent.com/AndroidOne-Experience/vendor_certification/refs/heads/main/gms_certified_props.json";
 
-    private static final long INITIAL_DELAY = 0;
-    private static final long INTERVAL = 5;
+    private static final long INTERVAL_HOURS = 6;
+    private static final long NETWORK_THROTTLE_MS = 10 * 60 * 1000; // 10 minutes throttle
 
     private static final boolean DEBUG = Log.isLoggable(TAG, Log.DEBUG);
     private static final Boolean sDisableGmsProps = SystemProperties.getBoolean(
@@ -44,6 +46,21 @@ public final class AttestationService extends SystemService {
 
     private final Context mContext;
     private final ScheduledExecutorService mScheduler;
+    private long mLastFetchTime = 0;
+
+    private final ConnectivityManager.NetworkCallback mNetworkCallback =
+            new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(@NonNull Network network) {
+                    dlog("Default network available: " + network);
+                    long now = SystemClock.elapsedRealtime();
+                    String savedProps = Settings.Secure.getString(
+                            mContext.getContentResolver(), Settings.Secure.FETCHED_PIF);
+                    if (savedProps == null || (now - mLastFetchTime >= NETWORK_THROTTLE_MS)) {
+                        mScheduler.execute(new FetchGmsCertifiedProps());
+                    }
+                }
+            };
 
     public AttestationService(Context context) {
         super(context);
@@ -59,9 +76,21 @@ public final class AttestationService extends SystemService {
         if (!sDisableGmsProps
                 && Utils.isPackageInstalled(mContext, "com.google.android.gms")
                 && phase == PHASE_BOOT_COMPLETED) {
-            Log.i(TAG, "Scheduling the service");
+            Log.i(TAG, "Registering network callback and scheduling periodic checks");
+            registerNetworkCallback();
             mScheduler.scheduleAtFixedRate(
-                    new FetchGmsCertifiedProps(), INITIAL_DELAY, INTERVAL, TimeUnit.MINUTES);
+                    new FetchGmsCertifiedProps(), INTERVAL_HOURS, INTERVAL_HOURS, TimeUnit.HOURS);
+        }
+    }
+
+    private void registerNetworkCallback() {
+        try {
+            ConnectivityManager cm = mContext.getSystemService(ConnectivityManager.class);
+            if (cm != null) {
+                cm.registerDefaultNetworkCallback(mNetworkCallback);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register network callback", e);
         }
     }
 
@@ -136,13 +165,16 @@ public final class AttestationService extends SystemService {
                 String savedProps = Settings.Secure.getString(mContext.getContentResolver(), Settings.Secure.FETCHED_PIF);
                 String props = fetchProps();
 
-                if (props != null && !props.equals(savedProps)) {
-                    dlog("Found new props");
-                    Settings.Secure.putString(mContext.getContentResolver(), Settings.Secure.FETCHED_PIF, props);
-                    killPackages();
-                    dlog("FetchGmsCertifiedProps completed");
-                } else {
-                    dlog("No change in props");
+                if (props != null) {
+                    mLastFetchTime = SystemClock.elapsedRealtime();
+                    if (!props.equals(savedProps)) {
+                        Log.i(TAG, "Found new props, updating FETCHED_PIF");
+                        Settings.Secure.putString(mContext.getContentResolver(), Settings.Secure.FETCHED_PIF, props);
+                        killPackages();
+                        dlog("FetchGmsCertifiedProps completed");
+                    } else {
+                        dlog("No change in props");
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error in FetchGmsCertifiedProps", e);
