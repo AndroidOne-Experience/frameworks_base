@@ -64,13 +64,21 @@ public final class KeyProviderManager {
                 return false;
             }
 
-            String currentPackage = ActivityThread.currentPackageName();
-            if (currentPackage != null && packageSet.contains(currentPackage)) {
-                return true;
-            }
-
             String processName = ActivityThread.currentProcessName();
             if (processName != null) {
+                // If this is DroidGuard or any Google Play Services process,
+                // automatically inherit access from com.google.android.gms
+                if (processName.startsWith("com.google.android.gms.")
+                        || processName.startsWith("com.google.android.gms:")
+                        || "com.google.android.gms".equals(processName)
+                        || processName.contains(".unstable")
+                        || processName.contains(":unstable")) {
+                    return packageSet.contains("com.google.android.gms")
+                            || packageSet.contains("com.google.android.gms.unstable")
+                            || packageSet.contains("com.google.android.gms:unstable")
+                            || packageSet.contains(processName);
+                }
+
                 if (packageSet.contains(processName)) {
                     return true;
                 }
@@ -78,12 +86,38 @@ public final class KeyProviderManager {
                 if (colonIdx > 0 && packageSet.contains(processName.substring(0, colonIdx))) {
                     return true;
                 }
+                for (String pkg : packageSet) {
+                    if (processName.startsWith(pkg + ".") || processName.startsWith(pkg + ":")) {
+                        return true;
+                    }
+                    String normalizedPkg = pkg.replace(':', '.');
+                    String normalizedProcess = processName.replace(':', '.');
+                    if (normalizedProcess.equals(normalizedPkg) || normalizedProcess.startsWith(normalizedPkg + ".")) {
+                        return true;
+                    }
+                }
+            }
+
+            String currentPackage = ActivityThread.currentPackageName();
+            if (currentPackage != null) {
+                if ("com.google.android.gms".equals(currentPackage)) {
+                    return packageSet.contains("com.google.android.gms");
+                }
+                if (packageSet.contains(currentPackage)) {
+                    return true;
+                }
             }
 
             try {
                 Application app = ActivityThread.currentApplication();
-                if (app != null && packageSet.contains(app.getPackageName())) {
-                    return true;
+                if (app != null) {
+                    String appPkg = app.getPackageName();
+                    if ("com.google.android.gms".equals(appPkg)) {
+                        return packageSet.contains("com.google.android.gms");
+                    }
+                    if (packageSet.contains(appPkg)) {
+                        return true;
+                    }
                 }
             } catch (Exception ignored) {}
 

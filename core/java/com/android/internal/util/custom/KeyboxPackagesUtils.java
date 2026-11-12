@@ -24,6 +24,11 @@ public final class KeyboxPackagesUtils {
 
     private static final String TAG = "KeyboxPackagesUtils";
 
+    public static final Set<String> DEFAULT_PACKAGES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "com.google.android.gms",
+            "com.android.vending"
+    )));
+
     private KeyboxPackagesUtils() {}
 
     public static Set<String> getPackages(Context context) {
@@ -33,13 +38,29 @@ public final class KeyboxPackagesUtils {
         return getPackages(context.getContentResolver());
     }
 
+    public static Set<String> getPackages(Context context, int userId) {
+        if (context == null) {
+            return Collections.emptySet();
+        }
+        return getPackages(context.getContentResolver(), userId);
+    }
+
     public static Set<String> getPackages(ContentResolver cr) {
+        return getPackages(cr, -1);
+    }
+
+    public static Set<String> getPackages(ContentResolver cr, int userId) {
         if (cr == null) {
             return Collections.emptySet();
         }
         try {
-            String packages = Settings.Secure.getString(cr, Settings.Secure.KEYBOX_PACKAGES);
-            if (!TextUtils.isEmpty(packages)) {
+            String packages = userId >= 0
+                    ? Settings.Secure.getStringForUser(cr, Settings.Secure.KEYBOX_PACKAGES, userId)
+                    : Settings.Secure.getString(cr, Settings.Secure.KEYBOX_PACKAGES);
+            if (packages == null) {
+                return new HashSet<>(DEFAULT_PACKAGES);
+            }
+            if (!packages.trim().isEmpty()) {
                 return new HashSet<>(Arrays.asList(packages.split(",")));
             }
         } catch (Exception e) {
@@ -59,7 +80,7 @@ public final class KeyboxPackagesUtils {
         if (context == null || TextUtils.isEmpty(packageName)) {
             return;
         }
-        Set<String> packages = new HashSet<>(getPackages(context));
+        Set<String> packages = new HashSet<>(getPackages(context, userId));
         if (packages.add(packageName)) {
             savePackages(context, packages, userId);
         }
@@ -69,7 +90,7 @@ public final class KeyboxPackagesUtils {
         if (context == null || TextUtils.isEmpty(packageName)) {
             return;
         }
-        Set<String> packages = new HashSet<>(getPackages(context));
+        Set<String> packages = new HashSet<>(getPackages(context, userId));
         if (packages.remove(packageName)) {
             savePackages(context, packages, userId);
         }
